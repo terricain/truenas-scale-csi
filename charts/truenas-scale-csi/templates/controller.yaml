@@ -4,6 +4,8 @@ metadata:
   name: {{ include "truenas-scale-csi.controllerDeploymentName" . }}
   labels:
     {{- include "truenas-scale-csi.labels" . | nindent 4 }}
+  annotations:
+    kubectl.kubernetes.io/default-container: controller-server
 spec:
   replicas: {{ .Values.controller.replicaCount }}
   selector:

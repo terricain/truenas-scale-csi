@@ -5,6 +5,8 @@ metadata:
   name: {{ include "truenas-scale-csi.nodeDaemonsetName" . }}
   labels:
     {{- include "truenas-scale-csi.labels" . | nindent 4 }}
+  annotations:
+    kubectl.kubernetes.io/default-container: node-server
 spec:
   selector:
     matchLabels:
@@ -114,7 +116,7 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/qnap.terrycain.github.com
+            path: /var/lib/kubelet/plugins/{{ include "truenas-scale-csi.csiDriverName" . }}
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:

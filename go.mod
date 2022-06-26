@@ -6,11 +6,11 @@ require (
 	github.com/container-storage-interface/spec v1.6.0
 	github.com/dariusbakunas/truenas-go-sdk v0.6.2
 	github.com/rs/zerolog v1.26.1
-	github.com/terrycain/truenas-go-sdk v0.0.0-20220616200107-4861f9712777
-	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
+	github.com/terrycain/truenas-go-sdk v0.0.0-20220626212836-dec58a817300
+	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/grpc v1.40.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.0
 	k8s.io/apimachinery v0.23.3
 	k8s.io/kubernetes v1.23.3
 	k8s.io/mount-utils v0.23.3
@@ -34,8 +34,8 @@ require (
 	github.com/opencontainers/selinux v1.8.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect

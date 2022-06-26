@@ -45,7 +45,7 @@ func main() {
 	}
 
 	if *csiType != "nfs" && *csiType != "iscsi" {
-		log.Fatal().Msg("type must be either NFS or ISCSI")
+		log.Fatal().Str("type", *csiType).Msg("type must be either NFS or ISCSI")
 	}
 	isNFS := *csiType == "nfs"
 

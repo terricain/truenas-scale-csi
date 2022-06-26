@@ -96,6 +96,11 @@ func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 }
 
 func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+	// TODO(iscsi)
+	if d.isNFS {
+		return d.nfsGetCapacity(ctx, req)
+	}
+
 	return nil, status.Error(codes.Unimplemented, "GetCapacity isnt implemented") // TODO(iscsi)
 }
 
@@ -115,7 +120,7 @@ func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 		// csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
-		// csi.ControllerServiceCapability_RPC_GET_CAPACITY, TODO(iscsi)
+		csi.ControllerServiceCapability_RPC_GET_CAPACITY,
 		// csi.ControllerServiceCapability_RPC_GET_VOLUME,
 		// csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		// csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES,

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
@@ -232,6 +234,26 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 			VolumeContext:      req.VolumeContext,
 			VolumeCapabilities: caps,
 		},
+	}, nil
+}
+
+func (d *Driver) nfsGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.nfsStoragePath).Execute()
+	if err != nil {
+		log.Error().Err(err).Interface("dataset_id", d.nfsStoragePath).Msg("Failed to get dataset")
+		return nil, status.Errorf(codes.Internal, "Failed to get NFS dataset: %s", err.Error())
+	}
+
+	available, err := strconv.ParseInt(resp.Available.GetRawvalue(), 10, 64)
+	if err != nil {
+		log.Error().Interface("available", resp.Available).Err(err).Msg("Failed parse available to int64")
+		return nil, status.Errorf(codes.Internal, "Failed to parse available bytes: %s", err.Error())
+	}
+
+	return &csi.GetCapacityResponse{
+		AvailableCapacity: available,
+		MaximumVolumeSize: nil,
+		MinimumVolumeSize: wrapperspb.Int64(minimumVolumeSizeInBytes),
 	}, nil
 }
 
