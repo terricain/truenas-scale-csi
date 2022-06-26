@@ -51,6 +51,22 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Node Selector labels
+*/}}
+{{- define "truenas-scale-csi.nodeSelectorLabels" -}}
+{{ include "truenas-scale-csi.selectorLabels" . }}
+app.kubernetes.io/component: node
+{{- end -}}
+
+{{/*
+Controller Selector labels
+*/}}
+{{- define "truenas-scale-csi.controllerSelectorLabels" -}}
+{{ include "truenas-scale-csi.selectorLabels" . }}
+app.kubernetes.io/component: controller
+{{- end -}}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "truenas-scale-csi.serviceAccountName" -}}
@@ -61,36 +77,36 @@ Create the name of the service account to use
 Create the name of the CSI driver
 */}}
 {{- define "truenas-scale-csi.csiDriverName" -}}
-{{- if eq .Values.settings.type "nfs" }}
+{{- if eq .Values.settings.type "nfs" -}}
 {{ .Values.nfsCSIDriverName }}
-{{- else }}
+{{- else -}}
 {{ .Values.iscsiCSIDriverName }}
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Create the name of the Storage class
 */}}
 {{- define "truenas-scale-csi.storageClassName" -}}
-{{- if eq .Values.settings.type "nfs" }}
+{{- if eq .Values.settings.type "nfs" -}}
 {{ .Values.storageClass.namePrefix }}nfs
-{{- else }}
+{{- else -}}
 {{ .Values.storageClass.namePrefix }}iscsi
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Create the name of the controller deployment to use
 */}}
 {{- define "truenas-scale-csi.controllerDeploymentName" -}}
-{{- printf "%s-controller" (include "qnap-csi.fullname" .) }}
+{{- printf "%s-controller" (include "truenas-scale-csi.fullname" .) }}
 {{- end }}
 
 {{/*
 Create the name of the node daemonset to use
 */}}
 {{- define "truenas-scale-csi.nodeDaemonsetName" -}}
-{{- printf "%s-node" (include "qnap-csi.fullname" .) }}
+{{- printf "%s-node" (include "truenas-scale-csi.fullname" .) }}
 {{- end }}
 
 {{/*
