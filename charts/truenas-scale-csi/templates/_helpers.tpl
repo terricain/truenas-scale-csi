@@ -113,9 +113,9 @@ Create the name of the node daemonset to use
 Log level
 */}}
 {{- define "truenas-scale-csi.logLevel" -}}
-{{- if .Values.settings.enableDebugLogging }}
+{{- if .Values.settings.enableDebugLogging -}}
 debug
-{{- else }}
+{{- else -}}
 info
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}

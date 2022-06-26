@@ -44,10 +44,10 @@ func main() {
 		log.Fatal().Msg("Node ID must be specified")
 	}
 
-	if *csiType != "NFS" && *csiType != "ISCSI" {
+	if *csiType != "nfs" && *csiType != "iscsi" {
 		log.Fatal().Msg("type must be either NFS or ISCSI")
 	}
-	isNFS := *csiType == "NFS"
+	isNFS := *csiType == "nfs"
 
 	if *endpoint == "" {
 		if isNFS {
