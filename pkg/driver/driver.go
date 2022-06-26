@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	NFSDriverName   = "nfs.truenas.terrycain.github.com"
-	ISCSIDriverName = "iscsi.truenas.terrycain.github.com"
+	NFSDriverName   = "nfs.truenas-scale.terrycain.github.com"
+	ISCSIDriverName = "iscsi.truenas-scale.terrycain.github.com"
 )
 
 var (
