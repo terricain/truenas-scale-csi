@@ -128,10 +128,12 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 
 	if !shareExists {
 		sharingRequest := d.client.SharingApi.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
-			Paths:   []string{datasetMountpoint},
-			Comment: tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.Name)),
-			Enabled: tnclient.PtrBool(true),
-			Ro:      tnclient.PtrBool(false),
+			Paths:        []string{datasetMountpoint},
+			Comment:      tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.Name)),
+			Enabled:      tnclient.PtrBool(true),
+			Ro:           tnclient.PtrBool(false),
+			MaprootGroup: tnclient.PtrString("root"),
+			MaprootUser:  tnclient.PtrString("root"),
 			// Can't use additionalProperties
 		})
 		_, _, err = sharingRequest.Execute()
