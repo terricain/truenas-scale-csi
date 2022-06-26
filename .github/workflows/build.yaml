@@ -16,6 +16,10 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
+      - uses: hadolint/hadolint-action@v2.0.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
 
   build:
     needs: lint
