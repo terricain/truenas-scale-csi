@@ -1,8 +1,8 @@
-
 package main
 
 import (
 	"context"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -32,7 +32,6 @@ func main() {
 	//	log.Info().Interface("resp", resp).Msg("")
 	//}
 
-
 	resp, err := controllerClient.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
 		Name: "testvol1",
 		CapacityRange: &csi.CapacityRange{
@@ -46,7 +45,6 @@ func main() {
 				AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
 			},
 		},
-
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
@@ -63,20 +61,18 @@ func main() {
 	//	log.Info().Interface("resp", resp2).Msg("")
 	//}
 
-
 	nodeClient := csi.NewNodeClient(conn)
 
 	_, err = nodeClient.NodePublishVolume(context.Background(), &csi.NodePublishVolumeRequest{
-		VolumeId: "nfs-testvol1",
+		VolumeId:   "nfs-testvol1",
 		TargetPath: "/tmp/lala",
 		VolumeCapability: &csi.VolumeCapability{
 			AccessType: &csi.VolumeCapability_Mount{
 				Mount: &csi.VolumeCapability_MountVolume{},
 			},
 			AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
-
 		},
-		Readonly: false,
+		Readonly:      false,
 		VolumeContext: resp.Volume.VolumeContext,
 	})
 	if err != nil {

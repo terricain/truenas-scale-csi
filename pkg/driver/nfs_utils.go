@@ -2,11 +2,14 @@ package driver
 
 import (
 	"context"
+
 	tnclient "github.com/terrycain/truenas-go-sdk"
 )
 
-type DatasetMatcher func(dataset tnclient.Dataset) bool
-type NFSShareMatcher func(share tnclient.ShareNFS) bool
+type (
+	DatasetMatcher  func(dataset tnclient.Dataset) bool
+	NFSShareMatcher func(share tnclient.ShareNFS) bool
+)
 
 func FindDataset(ctx context.Context, client *tnclient.APIClient, fn DatasetMatcher) (tnclient.Dataset, bool, error) {
 	datasets, _, err := client.DatasetApi.ListDatasets(ctx).Execute()

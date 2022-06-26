@@ -3,6 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
@@ -10,32 +14,27 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/mount-utils"
-	"os"
-	"strconv"
-	"strings"
 )
 
 const (
-	NFSVolumePrefix = "nfs-"
+	NFSVolumePrefix                 = "nfs-"
 	NFSVolumeContextParamMountPoint = "mountPoint"
-	NFSVolumeContextParamHost = "host"
+	NFSVolumeContextParamHost       = "host"
 )
 
-var (
-	NFSVolumeCapabilites = []csi.VolumeCapability_AccessMode_Mode{
-		csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
-		csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY,
-		csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
-		csi.VolumeCapability_AccessMode_MULTI_NODE_SINGLE_WRITER,
-		csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
-		csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER,
-		csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER,
-	}
-)
+var NFSVolumeCapabilites = []csi.VolumeCapability_AccessMode_Mode{
+	csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+	csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY,
+	csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+	csi.VolumeCapability_AccessMode_MULTI_NODE_SINGLE_WRITER,
+	csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
+	csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER,
+	csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER,
+}
 
-func nfsHasCapability(cap csi.VolumeCapability_AccessMode_Mode) bool {
+func nfsHasCapability(capability csi.VolumeCapability_AccessMode_Mode) bool {
 	for _, cs := range NFSVolumeCapabilites {
-		if cs == cap {
+		if cs == capability {
 			return true
 		}
 	}
@@ -52,10 +51,10 @@ func nfsCheckCaps(caps []*csi.VolumeCapability) error {
 
 		accessType := currentCap.GetAccessType()
 		switch accessType.(type) {
-			case *csi.VolumeCapability_Mount:
-			default:
-				violations.Insert(fmt.Sprintf("unsupported access type %v", accessType))
-			}
+		case *csi.VolumeCapability_Mount:
+		default:
+			violations.Insert(fmt.Sprintf("unsupported access type %v", accessType))
+		}
 	}
 	if violations.Len() > 0 {
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("volume capabilities cannot be satisified: %s", strings.Join(violations.List(), "; ")))
@@ -70,7 +69,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		return nil, err
 	}
 
-	volumeId := NFSVolumePrefix + req.Name
+	volumeID := NFSVolumePrefix + req.Name
 
 	// Don't care about size for now.
 	// Could iterate though a pool/dataset and check quotas but meh
@@ -83,7 +82,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	sizeGB := size / (1 * giB)
 	log.Debug().Int64("raw_size_gib", sizeGB).Msg("Raw size requested in gigabytes")
 
-	datasetName := strings.Join([]string{d.nfsStoragePath, volumeId}, "/")
+	datasetName := strings.Join([]string{d.nfsStoragePath, volumeID}, "/")
 	datasetMountpoint := ""
 
 	// Look for existing dataset
@@ -102,17 +101,17 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		log.Debug().Msg("Dataset does not exist, creating")
 
 		datasetRequest := d.client.DatasetApi.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
-			Name: datasetName,
-			Casesensitivity: tnclient.PtrString("SENSITIVE"),
-			Copies: tnclient.PtrInt32(1),
+			Name:              datasetName,
+			Casesensitivity:   tnclient.PtrString("SENSITIVE"),
+			Copies:            tnclient.PtrInt32(1),
 			InheritEncryption: tnclient.PtrBool(true),
-			ShareType: tnclient.PtrString("GENERIC"),
-			Refquota: tnclient.PtrInt64(size),
+			ShareType:         tnclient.PtrString("GENERIC"),
+			Refquota:          tnclient.PtrInt64(size),
 		})
-		datasetResponse, _, err := datasetRequest.Execute()
-		if err != nil {
-			log.Error().Err(err).Str("datasetName", datasetName).Msg("Failed to create dataset")
-			return nil, err
+		datasetResponse, _, err2 := datasetRequest.Execute()
+		if err2 != nil {
+			log.Error().Err(err2).Str("datasetName", datasetName).Msg("Failed to create dataset")
+			return nil, err2
 		}
 		datasetMountpoint = datasetResponse.GetMountpoint()
 	}
@@ -127,10 +126,10 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 
 	if !shareExists {
 		sharingRequest := d.client.SharingApi.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
-			Paths: []string{datasetMountpoint},
+			Paths:   []string{datasetMountpoint},
 			Comment: tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.Name)),
 			Enabled: tnclient.PtrBool(true),
-			Ro: tnclient.PtrBool(false),
+			Ro:      tnclient.PtrBool(false),
 			// Can't use additionalProperties
 		})
 		_, _, err = sharingRequest.Execute()
@@ -142,12 +141,12 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 
 	resp := &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId:      volumeId,
+			VolumeId:      volumeID,
 			CapacityBytes: size,
 			VolumeContext: map[string]string{
 				NFSVolumeContextParamMountPoint: datasetMountpoint,
-				NFSVolumeContextParamHost: d.address,
-				//"options": "",
+				NFSVolumeContextParamHost:       d.address,
+				// "options": "",
 			},
 		},
 	}
@@ -166,6 +165,10 @@ func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReque
 	existingDataset, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
 		return dataset.GetName() == datasetName
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		return err
+	}
 
 	if datasetExists {
 		_, err = d.client.DatasetApi.DeleteDataset(ctx, existingDataset.GetId()).Execute()
@@ -191,19 +194,18 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 	datasetName := strings.Join([]string{d.nfsStoragePath, req.VolumeId}, "/")
 
 	// Validate volume context
-	foundContextKeys := 0
-	for k, _ := range req.GetVolumeContext() {
+	foundContextKeys := 0 //nolint:ifshort
+	for k := range req.GetVolumeContext() {
 		switch k {
 		case NFSVolumeContextParamHost:
-			foundContextKeys += 1
+			foundContextKeys++
 		case NFSVolumeContextParamMountPoint:
-			foundContextKeys += 1
+			foundContextKeys++
 		}
 	}
 	if foundContextKeys != 2 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("%s, %s keys missing from volume context", NFSVolumeContextParamHost, NFSVolumeContextParamMountPoint))
 	}
-
 
 	// Look for existing dataset
 	_, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
@@ -227,7 +229,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 
 	return &csi.ValidateVolumeCapabilitiesResponse{
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
-			VolumeContext: req.VolumeContext,
+			VolumeContext:      req.VolumeContext,
 			VolumeCapabilities: caps,
 		},
 	}, nil
@@ -268,7 +270,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 
 	for _, share := range shares {
 		dataset := mountpointDataset[share.GetPaths()[0]] // we know this exists by this point
-		volumeId := strings.TrimPrefix(dataset.GetName(), nfsStoragePrefix)
+		volumeID := strings.TrimPrefix(dataset.GetName(), nfsStoragePrefix)
 
 		quotaComp := dataset.GetRefquota()
 		quota, err := strconv.ParseInt(quotaComp.GetRawvalue(), 10, 64)
@@ -279,7 +281,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 
 		result = append(result, &csi.ListVolumesResponse_Entry{
 			Volume: &csi.Volume{
-				VolumeId: volumeId,
+				VolumeId:      volumeID,
 				CapacityBytes: quota,
 			},
 		})
@@ -321,7 +323,7 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 	notMnt, err := d.mounter.IsLikelyNotMountPoint(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(targetPath, os.FileMode(0777)); err != nil {
+			if err = os.MkdirAll(targetPath, os.FileMode(0o777)); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			notMnt = true

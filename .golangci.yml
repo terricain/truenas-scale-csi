@@ -1,11 +1,11 @@
 run:
   timeout: 2m
   skip-dirs:
-    - cmd/qnap-csi-test  # Scratch test script
+    - cmd/truenas-csi-test-nfs  # Scratch test script
 
-  skip-files:
-    - driver/iscsi_iscsi.go  # Ignore files looted from iscsi csi driver
-    - driver/iscsi_util.go
+#  skip-files:
+#    - driver/iscsi_iscsi.go  # Ignore files looted from iscsi csi driver
+#    - driver/iscsi_util.go
 
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions

@@ -47,7 +47,6 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	accessMode := req.VolumeCapabilities[0].GetAccessMode().GetMode()
 	return nil, status.Errorf(codes.Unimplemented, "%v not supported yet", accessMode)
-
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
@@ -55,14 +54,15 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return nil, status.Error(codes.InvalidArgument, "DeleteVolume Volume ID must be provided")
 	}
 
-	if strings.HasPrefix(req.VolumeId, NFSVolumePrefix) {
+	switch {
+	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
 		if err := d.nfsDeleteVolume(ctx, req); err != nil {
-			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %w", req.VolumeId, err)
+			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", req.VolumeId, err.Error())
 		}
-	} else if strings.HasPrefix(req.VolumeId, "iscsi-") {
+	case strings.HasPrefix(req.VolumeId, "iscsi-"):
 		// TODO(iscsi)
 		return nil, status.Errorf(codes.Unimplemented, "ISCSI not supported yet: %s", req.VolumeId)
-	} else {
+	default:
 		return nil, status.Errorf(codes.Unknown, "Unknown volume type: %s", req.VolumeId)
 	}
 
@@ -90,13 +90,13 @@ func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 	}
 
 	return &csi.ListVolumesResponse{
-		Entries: nfsVolumes,
+		Entries:   nfsVolumes,
 		NextToken: "",
 	}, nil
 }
 
 func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "GetCapacity isnt implemented")  // TODO(iscsi)
+	return nil, status.Error(codes.Unimplemented, "GetCapacity isnt implemented") // TODO(iscsi)
 }
 
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
@@ -158,9 +158,9 @@ func (d *Driver) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 }
 
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")  // Not needed
+	return nil, status.Error(codes.Unimplemented, "not implemented") // Not needed
 }
 
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")  // Not needed
+	return nil, status.Error(codes.Unimplemented, "not implemented") // Not needed
 }
