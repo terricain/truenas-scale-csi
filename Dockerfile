@@ -6,8 +6,8 @@ COPY go.mod go.sum /usr/local/go/src/cmd/truenas-scale-csi/
 
 RUN go mod download
 
-ADD cmd/ /usr/local/go/src/cmd/qnap-csi-plugin/cmd/
-ADD pkg/ /usr/local/go/src/cmd/qnap-csi-plugin/pkg/
+ADD cmd/ /usr/local/go/src/cmd/truenas-scale-csi/cmd/
+ADD pkg/ /usr/local/go/src/cmd/truenas-scale-csi/pkg/
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /plugin cmd/truenas-csi-plugin/main.go
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /iscsiadm cmd/iscsiadm/main.go
