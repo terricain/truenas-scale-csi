@@ -13,11 +13,12 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /plugin cmd/true
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /iscsiadm cmd/iscsiadm/main.go
 
 FROM alpine:3.16.0 AS release
-RUN apk add --no-cache lsblk=2.38-r1 e2fsprogs=1.46.5-r0 xfsprogs=5.16.0-r1 util-linux-misc=2.38-r1
+RUN apk add --no-cache lsblk=2.38-r1 e2fsprogs=1.46.5-r0 xfsprogs=5.16.0-r1 util-linux-misc=2.38-r1 nfs-utils=2.6.1-r1
 # lsblk
 # e2fsprogs -> mkfs.ext3, mkfs.ext4, fsck.ext3, fsck.ext4
 # xfsprogs -> mkfs.xfs, fsck.xfs
 # util-linux-misc -> mount
+# nfs-utils -> mount.nfs, showmount
 
 COPY --from=build /plugin /plugin
 COPY --from=build /iscsiadm /sbin/iscsiadm
