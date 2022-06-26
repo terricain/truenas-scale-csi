@@ -1,0 +1,21 @@
+apiVersion: v2
+name: truenas-scale-csi
+description: A TrueNAS Scale CSI provider
+
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+
+#home: github link
+#icon: Some png
+keywords:
+  - csi
+  - nfs
+  - iscsi
+  - truenas
+#sources:
+#  - github link
+maintainers:
+  - name: terrycain
+engine: gotpl
+kubeVersion: ">=1.21.0-0"

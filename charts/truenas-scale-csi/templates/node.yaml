@@ -1,0 +1,136 @@
+
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: {{ include "truenas-scale-csi.nodeDaemonsetName" . }}
+  labels:
+    {{- include "truenas-scale-csi.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "truenas-scale-csi.nodeSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "truenas-scale-csi.nodeSelectorLabels" . | nindent 8 }}
+      {{- with .Values.node.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      hostNetwork: true  # original iscsi connection would be broken without hostNetwork setting
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/os: linux
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "truenas-scale-csi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.node.podSecurityContext | nindent 8 }}
+      containers:
+        - name: liveness-probe
+          image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
+          args:
+            - --csi-address=/csi/csi.sock
+            - --probe-timeout=3s
+            - --health-port=29653
+            - --v=2
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 20Mi
+        - name: node-driver-registrar
+          # This is necessary only for systems with SELinux, where
+          # non-privileged sidecar containers cannot access unix domain socket
+          # created by privileged CSI driver container.
+          securityContext:
+            privileged: true
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          args:
+            - --v=2
+            - --csi-address=/csi/csi.sock
+            - --kubelet-registration-path=/var/lib/kubelet/plugins/qnap.terrycain.github.com/csi.sock
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+        - name: node-server
+          securityContext:  # Taken from the iSCSI driver
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--url=$(TRUENAS_URL)"
+            - "--nfs-storage-path=$(NFS_PATH)"
+            - "--node-id=$(NODE_ID)"
+            - "--log-level=$(LOG_LEVEL)"
+            - "--type=$(CSI_TYPE)"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: TRUENAS_URL
+              value: {{ .Values.settings.url | quote }}
+            - name: NFS_PATH
+              value: {{ .Values.settings.nfsStoragePath | quote }}
+            - name: LOG_LEVEL
+              value: {{ (include "truenas-scale-csi.logLevel" .) | quote }}
+            - name: CSI_TYPE
+              value: {{ .Values.settings.type | quote }}
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: "Bidirectional"
+            - name: host-dev
+              mountPath: /dev
+            - name: host-root
+              mountPath: /host
+              mountPropagation: "HostToContainer"
+            #- name: iscsi-csi-run-dir
+            #  mountPath: /var/run/qnap.terrycain.github.com
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/qnap.terrycain.github.com
+            type: DirectoryOrCreate
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory
+        #- name: iscsi-csi-run-dir
+        #  hostPath:
+        #    path: /var/run/iscsi.truenas.terrycain.github.com

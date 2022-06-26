@@ -1,0 +1,15 @@
+{{- if .Values.storageClass.create }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ include "truenas-scale-csi.storageClassName" }}
+  labels:
+    {{- include "truenas-scale-csi.labels" . | nindent 4 }}
+  {{- with .Values.storageClass.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+allowVolumeExpansion: false
+reclaimPolicy: Delete
+provisioner: {{ include "truenas-scale-csi.csiDriverName" }}
+{{- end }}

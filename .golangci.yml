@@ -1,0 +1,179 @@
+run:
+  timeout: 2m
+  skip-dirs:
+    - cmd/qnap-csi-test  # Scratch test script
+
+  skip-files:
+    - driver/iscsi_iscsi.go  # Ignore files looted from iscsi csi driver
+    - driver/iscsi_util.go
+
+output:
+  # colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
+  format: colored-line-number
+  sort-results: true
+
+
+linters-settings:
+
+  cyclop:
+    # the maximal code complexity to report
+    max-complexity: 30
+    # the maximal average package complexity. If it's higher than 0.0 (float) the check is enabled (default 0.0)
+    package-average: 0.0
+    # should ignore tests (default false)
+    skip-tests: false
+
+  dogsled:
+    # checks assignments with too many blank identifiers; default is 2
+    max-blank-identifiers: 2
+
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+
+  gocognit:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 20
+
+  goconst:
+    # minimal length of string constant, 3 by default
+    min-len: 3
+    # minimum occurrences of constant string count to trigger issue, 3 by default
+    min-occurrences: 3
+    # ignore test files, false by default
+    ignore-tests: true
+    # look for existing constants matching the values, true by default
+    match-constant: true
+    # search also for duplicated numbers, false by default
+    numbers: false
+    # minimum value, only works with goconst.numbers, 3 by default
+    min: 3
+    # maximum value, only works with goconst.numbers, 3 by default
+    max: 3
+    # ignore when constant is not used as function argument, true by default
+    ignore-calls: true
+
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 20
+
+  godot:
+    # comments to be checked: `declarations`, `toplevel`, or `all`
+    scope: declarations
+    # check that each sentence starts with a capital letter
+    capital: true
+
+  godox:
+    # report any comments starting with keywords, this is useful for TODO or FIXME comments that
+    # might be left in the code accidentally and should be resolved before merging
+    keywords: # default keywords are TODO, BUG, and FIXME, these can be overwritten by this setting
+      - NOTE
+      #- TODO
+      - FIXME
+      - OPTIMIZE
+      - HACK
+
+  gofmt:
+    # simplify code: gofmt with `-s` option, true by default
+    simplify: true
+
+  gofumpt:
+    # Select the Go version to target. The default is `1.15`.
+    lang-version: "1.16"
+
+  golint:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
+
+  gosec:
+    # To select a subset of rules to run.
+    # Available rules: https://github.com/securego/gosec#available-rules
+    #    includes:
+    #      - G401
+    #      - G306
+    #      - G101
+    #    # To specify a set of rules to explicitly exclude.
+    #    # Available rules: https://github.com/securego/gosec#available-rules
+    #    excludes:
+    #      - G204
+    # To specify the configuration of rules.
+    # The configuration of rules is not fully documented by gosec:
+    # https://github.com/securego/gosec#configuration
+    # https://github.com/securego/gosec/blob/569328eade2ccbad4ce2d0f21ee158ab5356a5cf/rules/rulelist.go#L60-L102
+    config:
+      G306: "0600"
+      G101:
+        pattern: "(?i)example"
+        ignore_entropy: false
+        entropy_threshold: "80.0"
+        per_char_threshold: "3.0"
+        truncate: "32"
+
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
+
+  misspell:
+    # Correct spellings using locale preferences for US or UK.
+    # Default is to use a neutral variety of English.
+    # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+    locale: UK
+    ignore-words:
+      - someword
+
+  #  prealloc:
+  #    # XXX: we don't recommend using this linter before doing performance profiling.
+  #    # For most programs usage of prealloc will be a premature optimization.
+  #
+  #    # Report preallocation suggestions only on simple loops that have no returns/breaks/continues/gotos in them.
+  #    # True by default.
+  #    simple: true
+  #    range-loops: true # Report preallocation suggestions on range loops, true by default
+  #    for-loops: false # Report preallocation suggestions on for loops, false by default
+
+  unused:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.16"
+
+  #  whitespace:
+  #    multi-if: false   # Enforces newlines (or comments) after every multi-line if statement
+  #    multi-func: false # Enforces newlines (or comments) after every multi-line function signature
+
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+
+linters:
+  enable:
+    - megacheck
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - dogsled
+    - cyclop
+    - durationcheck
+    - errname
+    - goconst
+    - gocritic
+    - godot
+    - godox
+    - gofumpt
+    - gosec
+    - ifshort
+    - misspell
+    - predeclared
+    - revive
+    - unconvert
+
+  disable:
+    - prealloc
+    - scopelint
+  presets:
+    - bugs
+    - unused
+  fast: false

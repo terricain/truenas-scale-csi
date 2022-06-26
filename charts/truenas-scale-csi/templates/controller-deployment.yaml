@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "truenas-scale-csi.controllerDeploymentName" . }}
+  labels:
+    {{- include "truenas-scale-csi.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.controller.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "truenas-scale-csi.controllerSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "truenas-scale-csi.controllerSelectorLabels" . | nindent 8 }}
+      {{- with .Values.controller.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "truenas-scale-csi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.controller.podSecurityContext | nindent 8 }}
+      containers:
+        - name: controller-server
+          securityContext:
+            {{- toYaml .Values.controller.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.controller.resources | nindent 12 }}
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--url=$(TRUENAS_URL)"
+            - "--nfs-storage-path=$(NFS_PATH)"
+            - "--node-id=$(NODE_ID)"
+            - "--log-level=$(LOG_LEVEL)"
+            - "--controller"
+            - "--type=$(CSI_TYPE)"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: TRUENAS_URL
+              value: {{ .Values.settings.url | quote }}
+            - name: NFS_PATH
+              value: {{ .Values.settings.nfsStoragePath | quote }}
+            - name: LOG_LEVEL
+              value: {{ (include "truenas-scale-csi.logLevel" .) | quote }}
+            - name: CSI_TYPE
+              value: {{ .Values.settings.type | quote }}
+            - name: TRUENAS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.settings.accessTokenSecretName | quote }}
+                  key: token
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: csi-provisioner
+          image: quay.io/k8scsi/csi-provisioner:v1.6.0
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: csi-attacher
+          image: quay.io/k8scsi/csi-attacher:v2.2.0
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
