@@ -37,10 +37,13 @@ type Driver struct {
 	address string
 
 	nfsStoragePath string
+	iscsiStoragePath string
 	nodeID         string
 	client         *tnclient.APIClient
 	isController   bool
 	isNFS          bool
+	portalID int32
+	iscsiConfigDir string
 
 	srv      *grpc.Server
 	endpoint string
@@ -50,7 +53,7 @@ type Driver struct {
 	ready   bool
 }
 
-func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath string, isController bool, nodeID string, isNFS bool) (*Driver, error) {
+func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS bool) (*Driver, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse address: %w", err)
@@ -77,6 +80,8 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath string, isControll
 		baseURL:        baseURL,
 		address:        u.Host,
 		nfsStoragePath: nfsStoragePath,
+		iscsiStoragePath: iscsiStoragePath,
+		portalID: portalID,
 		nodeID:         nodeID,
 		client:         client,
 		isController:   isController,
@@ -112,11 +117,12 @@ func (d *Driver) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to make directories for sock, error: %w", err)
 	}
 
-	// TODO(iscsi)
-	// d.configDir = path.Join(sockPath, "config")
-	// if err = os.MkdirAll(d.configDir, 0o750); err != nil {
-	//	 return fmt.Errorf("failed to make directories for config, error: %w", err)
-	// }
+	if !d.isNFS {
+		d.iscsiConfigDir = path.Join(sockPath, "iscsi_config")
+		if err = os.MkdirAll(d.iscsiConfigDir, 0o750); err != nil {
+			return fmt.Errorf("failed to make directories for config, error: %w", err)
+		}
+	}
 
 	grpcListener, err := net.Listen(u.Scheme, grpcAddr)
 	if err != nil {

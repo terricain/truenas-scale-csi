@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/terrycain/truenas-scale-csi/pkg/driver"
@@ -23,7 +24,8 @@ func main() {
 		controller     = flag.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
 		nodeID         = flag.String("node-id", "", "Node ID")
 		csiType        = flag.String("type", "", "Type of CSI driver either NFS or ISCSI")
-		// portal        = flag.String("portal", "", "Portal Address (IP:PORT)")
+		iscsiStoragePath = flag.String("iscsi-storage-path", "", "iSCSI StoragePool/Dataset path")
+		portalID         = flag.Int("portal", -1, "Portal ID")
 	)
 	flag.Parse()
 
@@ -49,6 +51,21 @@ func main() {
 	}
 	isNFS := *csiType == "nfs"
 
+	if !isNFS {
+		if *portalID == -1 {
+			log.Fatal().Msg("portal flag must be provided")
+		}
+		if *iscsiStoragePath == "" {
+			log.Fatal().Msg("iSCSI storage path flag must be provided")
+		}
+	} else {
+		if *nfsStoragePath == "" {
+			log.Fatal().Msg("iSCSI storage path flag must be provided")
+		}
+	}
+
+	portalID32 := int32(*portalID)
+
 	if *endpoint == "" {
 		if isNFS {
 			*endpoint = "unix:///var/run/" + driver.NFSDriverName + "/csi.sock"
@@ -62,17 +79,17 @@ func main() {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
 		log.Debug().Msg("Initiating controller driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *controller, *nodeID, isNFS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	} else {
-		// if *logLevel == "debug" {
-		//   iscsiLib.EnableDebugLogging(os.Stdout)
-		// }
+		if !isNFS && *logLevel == "debug" {
+		  iscsiLib.EnableDebugLogging(os.Stdout)
+		}
 
 		// Node mode doesnt require qnap access
 		log.Debug().Msg("Initiating node driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *controller, *nodeID, isNFS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	}
