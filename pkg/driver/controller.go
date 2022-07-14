@@ -39,8 +39,6 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume Volume capabilities must be provided")
 	}
-
-	// TODO(iscsi)
 	if d.isNFS {
 		return d.nfsCreateVolume(ctx, req)
 	} else {
@@ -58,9 +56,10 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		if err := d.nfsDeleteVolume(ctx, req); err != nil {
 			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", req.VolumeId, err.Error())
 		}
-	case strings.HasPrefix(req.VolumeId, "iscsi-"):
-		// TODO(iscsi)
-		return nil, status.Errorf(codes.Unimplemented, "ISCSI not supported yet: %s", req.VolumeId)
+	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+		if err := d.iscsiDeleteVolume(ctx, req); err != nil {
+			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", req.VolumeId, err.Error())
+		}
 	default:
 		return nil, status.Errorf(codes.Unknown, "Unknown volume type: %s", req.VolumeId)
 	}
@@ -71,14 +70,21 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	if d.isNFS {
 		return d.nfsValidateVolumeCapabilities(ctx, req)
+	} else {
+		return d.iscsiValidateVolumeCapabilities(ctx, req)
 	}
-	// TODO(iscsi)
-
-	return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
 }
 
 func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
-	nfsVolumes, err := d.nfsListVolumes(ctx)
+	var volumes []*csi.ListVolumesResponse_Entry
+	var err error
+
+	if d.isNFS {
+		volumes, err = d.nfsListVolumes(ctx)
+	} else {
+		volumes, err = d.iscsiListVolumes(ctx)
+	}
+
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed to list NFS shares")
 	}
@@ -89,18 +95,17 @@ func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 	}
 
 	return &csi.ListVolumesResponse{
-		Entries:   nfsVolumes,
+		Entries:   volumes,
 		NextToken: "",
 	}, nil
 }
 
 func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-	// TODO(iscsi)
 	if d.isNFS {
 		return d.nfsGetCapacity(ctx, req)
+	} else {
+		return d.iscsiGetCapacity(ctx, req)
 	}
-
-	return nil, status.Error(codes.Unimplemented, "GetCapacity isnt implemented") // TODO(iscsi)
 }
 
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {

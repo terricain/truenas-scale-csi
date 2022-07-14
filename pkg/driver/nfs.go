@@ -160,7 +160,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 
 func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) error {
 	if !strings.HasPrefix(req.VolumeId, NFSVolumePrefix) {
-		return status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+		return status.Errorf(codes.NotFound, "Volume ID %s not found", req.VolumeId)
 	}
 
 	// Deleting the dataset will remove the NFS share :)
@@ -289,7 +289,6 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 		return nil, err
 	}
 
-	// TODO(nfs) paginate output
 	result := make([]*csi.ListVolumesResponse_Entry, 0)
 
 	for _, share := range shares {

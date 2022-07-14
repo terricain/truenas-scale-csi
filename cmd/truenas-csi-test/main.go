@@ -62,26 +62,45 @@ func main() {
 	//}
 
 	// iSCSI
-	resp, err := controllerClient.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
-		Name: "testvol1",
-		CapacityRange: &csi.CapacityRange{
-			RequiredBytes: 2 * giB,
-		},
-		VolumeCapabilities: []*csi.VolumeCapability{
-			{
-				AccessType: &csi.VolumeCapability_Mount{
-					Mount: &csi.VolumeCapability_MountVolume{},
-				},
-				AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER},
-			},
-		},
-	})
+	//resp, err := controllerClient.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+	//	Name: "testvol2",
+	//	CapacityRange: &csi.CapacityRange{
+	//		RequiredBytes: 2 * giB,
+	//	},
+	//	VolumeCapabilities: []*csi.VolumeCapability{
+	//		{
+	//			AccessType: &csi.VolumeCapability_Mount{
+	//				Mount: &csi.VolumeCapability_MountVolume{},
+	//			},
+	//			AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER},
+	//		},
+	//	},
+	//})
+	//if err != nil {
+	//	log.Fatal().Err(err).Msg("")
+	//} else {
+	//	log.Info().Interface("resp", resp).Msg("")
+	//}
+
+	// iSCSI
+	//resp2, err := controllerClient.DeleteVolume(context.Background(), &csi.DeleteVolumeRequest{
+	//	VolumeId: "iscsi-testvol1",
+	//})
+	//if err != nil {
+	//	log.Fatal().Err(err).Msg("")
+	//} else {
+	//	log.Info().Interface("resp", resp2).Msg("")
+	//}
+
+	// iSCSI
+	resp, err := controllerClient.ListVolumes(context.Background(), &csi.ListVolumesRequest{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	} else {
 		log.Info().Interface("resp", resp).Msg("")
 	}
 
+	// NFS
 	//resp2, err := client.DeleteVolume(context.Background(), &csi.DeleteVolumeRequest{
 	//	VolumeId: resp.Volume.GetVolumeId(),
 	//})

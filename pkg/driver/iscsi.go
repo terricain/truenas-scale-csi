@@ -3,7 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/rs/zerolog/log"
@@ -342,4 +345,205 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	}
 
 	return resp, nil
+}
+
+func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) error {
+	if !strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix) {
+		return status.Errorf(codes.NotFound, "Volume ID %s not found", req.VolumeId)
+	}
+
+	// Deleting the dataset will remove ?
+	datasetName := strings.Join([]string{d.iscsiStoragePath, req.VolumeId}, "/")
+
+	existingDataset, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
+		return dataset.GetName() == datasetName
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		return err
+	}
+
+	if datasetExists {
+		_, err = d.client.DatasetApi.DeleteDataset(ctx, existingDataset.GetId()).Execute()
+		if err != nil {
+			log.Error().Err(err).Interface("dataset_id", existingDataset.GetId()).Msg("Failed to delete Dataset")
+			return err
+		}
+	}
+
+	// Deleting the dataset leaves only the initiator
+	existingInitiator, initiatorExists, err := FindISCSIInitiator(ctx, d.client, func(initiator tnclient.ISCSIInitiator) bool {
+		return strings.HasPrefix(initiator.Comment, req.VolumeId)
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to look for existing iSCSI initiators")
+		return err
+	}
+
+	if initiatorExists {
+		log.Debug().Int32("iSCSIInitiatorID", existingInitiator.Id).Msg("Cleaning up iSCSI Initiator")
+		_, err = d.client.IscsiInitiatorApi.DeleteISCSIInitiator(ctx, existingInitiator.Id).Execute()
+		if err != nil {
+			log.Error().Err(err).Int32("iSCSIInitiatorID", existingInitiator.Id).Msg("Failed to cleanup iSCSI Initiator")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+	if !strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix) {
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+	}
+
+	if err := iscsiCheckCaps(req.VolumeCapabilities); err != nil {
+		log.Error().Err(err).Msg("Invalid volume caps")
+		return nil, err
+	}
+
+	datasetName := strings.Join([]string{d.iscsiStoragePath, req.VolumeId}, "/")
+
+	// Validate volume context
+	foundContextKeys := 0 //nolint:ifshort
+	for k := range req.GetVolumeContext() {
+		switch k {
+		case ISCSIVolumeContextTargetPortal:
+			foundContextKeys++
+		case ISCSIVolumeContextIQN:
+			foundContextKeys++
+		case ISCSIVolumeContextLUN:
+			foundContextKeys++
+		case ISCSIVolumeContextPortals:
+			foundContextKeys++
+		}
+	}
+	if foundContextKeys != 4 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("%s, %s, %s, %s keys missing from volume context", ISCSIVolumeContextTargetPortal, ISCSIVolumeContextIQN, ISCSIVolumeContextLUN, ISCSIVolumeContextPortals))
+	}
+
+	// Look for existing dataset
+	_, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
+		return dataset.GetName() == datasetName
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		return nil, status.Errorf(codes.Internal, "failed to look for existing datasets: %v", err)
+	}
+
+	if !datasetExists {
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+	}
+
+	caps := make([]*csi.VolumeCapability, 0)
+	for _, currentCap := range ISCSIVolumeCapabilites {
+		caps = append(caps, &csi.VolumeCapability{
+			AccessMode: &csi.VolumeCapability_AccessMode{Mode: currentCap},
+		})
+	}
+
+	return &csi.ValidateVolumeCapabilitiesResponse{
+		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
+			VolumeContext:      req.VolumeContext,
+			VolumeCapabilities: caps,
+		},
+	}, nil
+}
+
+func (d *Driver) iscsiGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+	// TODO(iscsi) refactor this out as is pretty much same as in nfsGetCapacity
+	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.iscsiStoragePath).Execute()
+	if err != nil {
+		log.Error().Err(err).Interface("dataset_id", d.iscsiStoragePath).Msg("Failed to get dataset")
+		return nil, status.Errorf(codes.Internal, "Failed to get iSCSI dataset: %s", err.Error())
+	}
+
+	available, err := strconv.ParseInt(resp.Available.GetRawvalue(), 10, 64)
+	if err != nil {
+		log.Error().Interface("available", resp.Available).Err(err).Msg("Failed parse available to int64")
+		return nil, status.Errorf(codes.Internal, "Failed to parse available bytes: %s", err.Error())
+	}
+
+	return &csi.GetCapacityResponse{
+		AvailableCapacity: available,
+		MaximumVolumeSize: nil,
+		MinimumVolumeSize: wrapperspb.Int64(minimumVolumeSizeInBytes),
+	}, nil
+}
+
+func (d *Driver) iscsiListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse_Entry, error) {
+	// So, we want all the volumes -> extents -> extent target mappings -> targets
+
+	iscsiStoragePrefix := d.iscsiStoragePath + "/"
+	datasets, err := FindAllDatasets(ctx, d.client, func(dataset tnclient.Dataset) bool {
+		return dataset.GetType() == "VOLUME" && strings.HasPrefix(dataset.GetName(), iscsiStoragePrefix)
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get list of datasets")
+		return nil, err
+	}
+
+	datasetMap := make(map[string]*tnclient.Dataset)
+	for _, dataset := range datasets {
+		ds := dataset
+		zvolPath := "zvol/" + ds.GetName()
+		datasetMap[zvolPath] = &ds
+	}
+
+	extents, err := FindAllISCSIExtents(ctx, d.client, func(extent tnclient.ISCSIExtent) bool {
+		_, exists := datasetMap[extent.GetPath()]
+		return exists
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get list of iSCSI extents")
+		return nil, err
+	}
+
+	extentMap := make(map[int32]*tnclient.Dataset)
+	for _, extent := range extents {
+		extentMap[extent.GetId()] = datasetMap[extent.GetPath()]
+	}
+
+	// Get extent target mapping
+	extentMappings, err := FindAllISCSITargetExtents(ctx, d.client, func(targetExtent tnclient.ISCSITargetExtent) bool {
+		_, exists := extentMap[targetExtent.Extent]
+		return exists
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get list of iSCSI extent mappings")
+		return nil, err
+	}
+
+	extentTargetMap := make(map[int32]*tnclient.Dataset)
+	for _, mapping := range extentMappings {
+		extentTargetMap[mapping.GetTarget()] = extentMap[mapping.GetExtent()]
+	}
+
+	targets, err := FindAllISCSITargets(ctx, d.client, func(target tnclient.ISCSITarget) bool {
+		_, exists := extentTargetMap[target.GetId()]
+		return exists
+	})
+
+	result := make([]*csi.ListVolumesResponse_Entry, 0)
+
+	for _, target := range targets {
+		volumeID := target.GetName()
+		dataset := extentTargetMap[target.GetId()]
+
+		volsizeComp := dataset.GetVolsize()
+		quota, err := strconv.ParseInt(volsizeComp.GetRawvalue(), 10, 64)
+		if err != nil {
+			log.Error().Interface("volsize_composite", volsizeComp).Err(err).Msg("Failed parse volsize to int64")
+			return nil, err
+		}
+
+		result = append(result, &csi.ListVolumesResponse_Entry{
+			Volume: &csi.Volume{
+				VolumeId:      volumeID,
+				CapacityBytes: quota,
+			},
+		})
+	}
+
+	return result, nil
 }
