@@ -3,21 +3,22 @@ package driver
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"strings"
 )
 
 const (
-	ISCSIVolumePrefix                 = "iscsi-"
+	ISCSIVolumePrefix              = "iscsi-"
 	ISCSIVolumeContextTargetPortal = "targetPortal"
-	ISCSIVolumeContextIQN = "iqn"
-	ISCSIVolumeContextLUN = "lun"
-	ISCSIVolumeContextPortals = "portals"
+	ISCSIVolumeContextIQN          = "iqn"
+	ISCSIVolumeContextLUN          = "lun"
+	ISCSIVolumeContextPortals      = "portals"
 )
 
 var ISCSIVolumeCapabilites = []csi.VolumeCapability_AccessMode_Mode{
@@ -64,6 +65,30 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 		return nil, err
 	}
 
+	// Get iSCSI IQN prefix
+	globalConfigResponse, _, err := d.client.IscsiGlobalApi.GetISCSIGlobalConfiguration(ctx).Execute()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get global iSCSI config")
+		return nil, status.Errorf(codes.Internal, "failed to get global iSCSI config: %v", err)
+	}
+	iqnBase := globalConfigResponse.Basename
+
+	// Get portal get portal ip and port
+	portalResponse, _, err := d.client.IscsiPortalApi.GetISCSIPortal(ctx, d.portalID).Execute()
+	if err != nil {
+		log.Error().Err(err).Int32("portalID", d.portalID).Msg("Failed to get portal")
+		return nil, status.Errorf(codes.Internal, "failed to get portal info: %v", err)
+	}
+	if len(portalResponse.Listen) == 0 {
+		log.Error().Err(err).Int32("portalID", d.portalID).Msg("Portal has no listen addresses")
+		return nil, status.Errorf(codes.Internal, "failed to get active iSCSI portal: %v", err)
+	}
+	if len(portalResponse.Listen) > 1 {
+		log.Warn().Int32("portalID", d.portalID).Msg("Portal has more than 1 listening address, using first one")
+	}
+	portalListenItem := portalResponse.Listen[0]
+	portalAddr := fmt.Sprintf("%s:%d", portalListenItem.GetIp(), portalListenItem.GetPort())
+
 	volumeID := ISCSIVolumePrefix + req.Name
 
 	// Don't care about size for now.
@@ -78,33 +103,17 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	sizeGB := size / (1 * giB)
 	log.Debug().Int64("raw_size_gib", sizeGB).Msg("Raw size requested in gigabytes")
 
-	// Get portal info
-	// Get base iqn
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	datasetName := strings.Join([]string{d.iscsiStoragePath, volumeID}, "/")
 
 	datasetID := ""
 	extentID := int32(-1)
 	initatorID := int32(-1)
 	targetID := int32(-1)
-	//targetExtentID := int32(-1)
+	// targetExtentID := int32(-1)
 
 	// Create dataset
 	existingDataset, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
-		return dataset.GetName() == datasetName
+		return dataset.GetName() == datasetName && dataset.GetType() == "VOLUME"
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to look for existing datasets")
@@ -119,10 +128,10 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 		log.Debug().Msg("Dataset does not exist, creating")
 
 		datasetRequest := d.client.DatasetApi.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
-			Name:              datasetName,
-			Type: tnclient.PtrString("VOLUME"),
+			Name:         datasetName,
+			Type:         tnclient.PtrString("VOLUME"),
 			Volblocksize: tnclient.PtrString("16K"),
-			Volsize: tnclient.PtrInt64(size),
+			Volsize:      tnclient.PtrInt64(size),
 		})
 		datasetResponse, _, err2 := datasetRequest.Execute()
 		if err2 != nil {
@@ -147,9 +156,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	// Create iSCSI extent
 	extentPath := "zvol/" + datasetName
 	existingExtent, extentExists, err := FindISCSIExtent(ctx, d.client, func(extent tnclient.ISCSIExtent) bool {
-		// TODO(iscsi) also check extent path
-		// TODO(iscsi) name might be easier, or both
-		return extent.Name == extentPath
+		return extent.GetPath() == extentPath
 	})
 	if err != nil {
 		cleanupFunc()
@@ -162,16 +169,16 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 		extentID = existingExtent.Id
 	} else {
 		log.Debug().Msg("iSCSI extent does not exist, creating")
-		
+
 		extentRequest := d.client.IscsiExtentApi.CreateISCSIExtent(ctx).CreateISCSIExtentParams(tnclient.CreateISCSIExtentParams{
-			Name: volumeID,
-			Rpm: tnclient.PtrString("SSD"),
-			Type: "DISK",
+			Name:        volumeID,
+			Rpm:         tnclient.PtrString("SSD"),
+			Type:        "DISK",
 			InsecureTpc: tnclient.PtrBool(true),
-			Xen: tnclient.PtrBool(false),
-			Comment: tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI extent"),
-			Blocksize: tnclient.PtrInt32(512),
-			Disk: *tnclient.NewNullableString(tnclient.PtrString(extentPath)),
+			Xen:         tnclient.PtrBool(false),
+			Comment:     tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI extent"),
+			Blocksize:   tnclient.PtrInt32(512),
+			Disk:        *tnclient.NewNullableString(tnclient.PtrString(extentPath)),
 		})
 		extentResponse, _, err2 := extentRequest.Execute()
 		if err2 != nil {
@@ -240,7 +247,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	// Create iSCSI target
 	existingTarget, targetExists, err := FindISCSITarget(ctx, d.client, func(target tnclient.ISCSITarget) bool {
-		return strings.HasPrefix(target.GetName(), volumeID)
+		return target.GetName() == volumeID
 	})
 	if err != nil {
 		cleanupFunc()
@@ -255,16 +262,16 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 		log.Debug().Msg("iSCSI target does not exist, creating")
 
 		targetRequest := d.client.IscsiTargetApi.CreateISCSITarget(ctx).CreateISCSITargetParams(tnclient.CreateISCSITargetParams{
-				Name: volumeID,
-				Alias: *tnclient.NewNullableString(tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI initiator")),
-				Mode: tnclient.PtrString("ISCSI"),
-				Groups: []tnclient.CreateISCSITargetParamsGroupsInner{
-					{
-						Portal:               d.portalID,
-						Initiator:            tnclient.PtrInt32(initatorID),
-						Authmethod: "NONE",
-					},
+			Name:  volumeID,
+			Alias: *tnclient.NewNullableString(tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI initiator")),
+			Mode:  tnclient.PtrString("ISCSI"),
+			Groups: []tnclient.CreateISCSITargetParamsGroupsInner{
+				{
+					Portal:     d.portalID,
+					Initiator:  tnclient.PtrInt32(initatorID),
+					Authmethod: "NONE",
 				},
+			},
 		})
 		targetResponse, _, err2 := targetRequest.Execute()
 		if err2 != nil {
@@ -290,7 +297,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	}
 
 	// Create iSCSI target extent mapping
-	existingTargetExtent, targetExtentExists, err := FindISCSITargetExtent(ctx, d.client, func(targetExtent tnclient.ISCSITargetExtent) bool {
+	_, targetExtentExists, err := FindISCSITargetExtent(ctx, d.client, func(targetExtent tnclient.ISCSITargetExtent) bool {
 		return targetExtent.Target == targetID && targetExtent.Extent == extentID
 	})
 	if err != nil {
@@ -301,7 +308,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	if targetExtentExists {
 		log.Debug().Msg("iSCSI target extent exists, skipping")
-		//targetExtentID = existingTargetExtent.Id
+		// targetExtentID = existingTargetExtent.Id
 	} else {
 		log.Debug().Msg("iSCSI target extent does not exist, creating")
 
@@ -315,22 +322,21 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 			log.Error().Err(err2).Int32("targetID", targetID).Int32("extentID", extentID).Msg("Failed to create iSCSI target extent")
 			return nil, err2
 		}
-		//targetExtentID = targetExtentResponse.Id
+		// targetExtentID = targetExtentResponse.Id
 	}
 
 	// Should be done by now
-
-
+	iqn := fmt.Sprintf("%s:%s", iqnBase, volumeID) // iqnBase:targetName
 
 	resp := &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volumeID,
 			CapacityBytes: size,
 			VolumeContext: map[string]string{
-				ISCSIVolumeContextTargetPortal: PORTALIP_PORT,
-				ISCSIVolumeContextIQN: IQN,  // iqn.2005-10.org.freenas.ctl:prometheus
-				ISCSIVolumeContextLUN: "0",  // We always set it to 0 in the target extent mapping
-				ISCSIVolumeContextPortals: "[]",
+				ISCSIVolumeContextTargetPortal: portalAddr,
+				ISCSIVolumeContextIQN:          iqn, // iqn.2005-10.org.freenas.ctl:prometheus
+				ISCSIVolumeContextLUN:          "0", // We always set it to 0 in the target extent mapping
+				ISCSIVolumeContextPortals:      "[]",
 			},
 		},
 	}

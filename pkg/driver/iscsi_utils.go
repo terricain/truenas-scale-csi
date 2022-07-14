@@ -2,13 +2,14 @@ package driver
 
 import (
 	"context"
+
 	tnclient "github.com/terrycain/truenas-go-sdk"
 )
 
 type (
-	ISCSIExtentMatcher func(extent tnclient.ISCSIExtent) bool
-	ISCSIInitiatorMatcher func(initiator tnclient.ISCSIInitiator) bool
-	ISCSITargetMatcher func(target tnclient.ISCSITarget) bool
+	ISCSIExtentMatcher       func(extent tnclient.ISCSIExtent) bool
+	ISCSIInitiatorMatcher    func(initiator tnclient.ISCSIInitiator) bool
+	ISCSITargetMatcher       func(target tnclient.ISCSITarget) bool
 	ISCSITargetExtentMatcher func(targetExtent tnclient.ISCSITargetExtent) bool
 )
 

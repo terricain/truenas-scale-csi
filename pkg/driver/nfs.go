@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/mount-utils"
+	mountutils "k8s.io/mount-utils"
 )
 
 const (
@@ -380,7 +380,7 @@ func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpubl
 	targetPath := req.GetTargetPath()
 
 	log.Info().Str("volume_id", volumeID).Str("target_path", targetPath).Msg("NodeUnpublishVolume unmounting volume")
-	err := mount.CleanupMountPoint(targetPath, d.mounter, true)
+	err := mountutils.CleanupMountPoint(targetPath, d.mounter, true)
 	if err != nil {
 		log.Error().Str("volume_id", volumeID).Str("target_path", targetPath).Err(err).Msg("NodeUnpublishVolume failed unmounting volume")
 		return nil, status.Errorf(codes.Internal, "failed to unmount target %q: %v", targetPath, err)

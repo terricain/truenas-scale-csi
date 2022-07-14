@@ -16,14 +16,14 @@ import (
 
 func main() {
 	var (
-		endpoint       = flag.String("endpoint", "", "CSI endpoint")
-		truenasURL     = flag.String("url", "", "TrueNAS Scale URL (ends with api/v2.0)")
-		nfsStoragePath = flag.String("nfs-storage-path", "", "NFS StoragePool/Dataset path")
-		logLevel       = flag.String("log-level", "info", "Log level (info/warn/fatal/error)")
-		version        = flag.Bool("version", false, "Print the version and exit")
-		controller     = flag.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
-		nodeID         = flag.String("node-id", "", "Node ID")
-		csiType        = flag.String("type", "", "Type of CSI driver either NFS or ISCSI")
+		endpoint         = flag.String("endpoint", "", "CSI endpoint")
+		truenasURL       = flag.String("url", "", "TrueNAS Scale URL (ends with api/v2.0)")
+		nfsStoragePath   = flag.String("nfs-storage-path", "", "NFS StoragePool/Dataset path")
+		logLevel         = flag.String("log-level", "info", "Log level (info/warn/fatal/error)")
+		version          = flag.Bool("version", false, "Print the version and exit")
+		controller       = flag.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
+		nodeID           = flag.String("node-id", "", "Node ID")
+		csiType          = flag.String("type", "", "Type of CSI driver either NFS or ISCSI")
 		iscsiStoragePath = flag.String("iscsi-storage-path", "", "iSCSI StoragePool/Dataset path")
 		portalID         = flag.Int("portal", -1, "Portal ID")
 	)
@@ -84,7 +84,7 @@ func main() {
 		}
 	} else {
 		if !isNFS && *logLevel == "debug" {
-		  iscsiLib.EnableDebugLogging(os.Stdout)
+			iscsiLib.EnableDebugLogging(os.Stdout)
 		}
 
 		// Node mode doesnt require qnap access

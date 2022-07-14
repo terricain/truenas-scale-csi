@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
+	"os"
+
 	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
 	"golang.org/x/oauth2"
-	"os"
 )
 
 func main() {
-
 	accessToken := os.Getenv("TRUENAS_TOKEN")
 	url := os.Getenv("TRUENAS_URL")
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
@@ -20,6 +20,15 @@ func main() {
 	config.HTTPClient = tc
 	client := tnclient.NewAPIClient(config)
 	ctx := context.Background()
+
+	// Get global configuration
+	// resp, _, err := client.IscsiGlobalApi.GetISCSIGlobalConfiguration(ctx).Execute()
+
+	// List portals
+	// resp, _, err := client.IscsiPortalApi.ListISCSIPortal(ctx).Execute()
+
+	// Get portal
+	resp, _, err := client.IscsiPortalApi.GetISCSIPortal(ctx, 1).Execute()
 
 	// Create iSCSI Extent
 	//param := tnclient.CreateISCSIExtentParams{
@@ -35,10 +44,10 @@ func main() {
 	//resp, _, err := client.IscsiExtentApi.CreateISCSIExtent(ctx).CreateISCSIExtentParams(param).Execute()
 
 	// List iSCSI Extents
-	//resp, _, err := client.IscsiExtentApi.ListISCSIExtent(ctx).Execute()
+	// resp, _, err := client.IscsiExtentApi.ListISCSIExtent(ctx).Execute()
 
 	// Get iSCSI Extent
-	//resp, _, err := client.IscsiExtentApi.GetISCSIExtent(ctx, 2).Execute()
+	// resp, _, err := client.IscsiExtentApi.GetISCSIExtent(ctx, 2).Execute()
 
 	// Delete iSCSI Extent
 	//params := tnclient.DeleteISCSIExtentParams{
@@ -54,13 +63,13 @@ func main() {
 	//resp, _, err := client.IscsiInitiatorApi.CreateISCSIInitiator(ctx).CreateISCSIInitiatorParams(param).Execute()
 
 	// List iSCSI Initiators
-	resp, _, err := client.IscsiInitiatorApi.ListISCSIInitiator(ctx).Execute()
+	// resp, _, err := client.IscsiInitiatorApi.ListISCSIInitiator(ctx).Execute()
 
 	// Get iSCSI Initiators
-	//resp, _, err := client.IscsiInitiatorApi.GetISCSIInitiator(ctx, 1).Execute()
+	// resp, _, err := client.IscsiInitiatorApi.GetISCSIInitiator(ctx, 1).Execute()
 
 	// Delete iSCSI Initiators
-	//resp, err := client.IscsiInitiatorApi.DeleteISCSIInitiator(ctx, 8).Execute()
+	// resp, err := client.IscsiInitiatorApi.DeleteISCSIInitiator(ctx, 8).Execute()
 
 	// Create iSCSI Target
 	//param := tnclient.CreateISCSITargetParams{
@@ -78,13 +87,13 @@ func main() {
 	//resp, _, err := client.IscsiTargetApi.CreateISCSITarget(ctx).CreateISCSITargetParams(param).Execute()
 
 	// List iSCSI Targets
-	//resp, _, err := client.IscsiTargetApi.ListISCSITarget(ctx).Execute()
+	// resp, _, err := client.IscsiTargetApi.ListISCSITarget(ctx).Execute()
 
 	// Get iSCSI Target
-	//resp, _, err := client.IscsiTargetApi.GetISCSITarget(ctx, 2).Execute()
+	// resp, _, err := client.IscsiTargetApi.GetISCSITarget(ctx, 2).Execute()
 
 	// Delete iSCSI Target (deletes extent mapping)
-	//resp, err := client.IscsiTargetApi.DeleteISCSITarget(ctx, 2).Body(true).Execute()
+	// resp, err := client.IscsiTargetApi.DeleteISCSITarget(ctx, 2).Body(true).Execute()
 
 	// Create iSCSI Target Extent mapping
 	//param := tnclient.CreateISCSITargetExtentParams{
@@ -94,19 +103,16 @@ func main() {
 	//resp, _, err := client.IscsiTargetextentApi.CreateISCSITargetExtent(ctx).CreateISCSITargetExtentParams(param).Execute()
 
 	// List iSCSI Target Extent mappings
-	//resp, _, err := client.IscsiTargetextentApi.ListISCSITargetExtent(ctx).Execute()
+	// resp, _, err := client.IscsiTargetextentApi.ListISCSITargetExtent(ctx).Execute()
 
 	// Get iSCSI Target Extent mapping
-	//resp, _, err := client.IscsiTargetextentApi.GetISCSITargetExtent(ctx, 6).Execute()
+	// resp, _, err := client.IscsiTargetextentApi.GetISCSITargetExtent(ctx, 6).Execute()
 
 	// Delete iSCSI Target Extent mapping
-	//resp, err := client.IscsiTargetextentApi.DeleteISCSITargetExtent(ctx, 6).Body(true).Execute()
+	// resp, err := client.IscsiTargetextentApi.DeleteISCSITargetExtent(ctx, 6).Body(true).Execute()
 
 	log.Info().Interface("resp", resp).Msg("Sent")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to send request")
 	}
-
-
-
 }

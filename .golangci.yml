@@ -1,7 +1,8 @@
 run:
   timeout: 2m
   skip-dirs:
-    - cmd/truenas-csi-test-nfs  # Scratch test script
+    - cmd/truenas-csi-test  # Scratch test script
+    - cmd/truenas-iscsi-test
 
 #  skip-files:
 #    - driver/iscsi_iscsi.go  # Ignore files looted from iscsi csi driver

@@ -36,14 +36,14 @@ type Driver struct {
 	baseURL string
 	address string
 
-	nfsStoragePath string
+	nfsStoragePath   string
 	iscsiStoragePath string
-	nodeID         string
-	client         *tnclient.APIClient
-	isController   bool
-	isNFS          bool
-	portalID int32
-	iscsiConfigDir string
+	nodeID           string
+	client           *tnclient.APIClient
+	isController     bool
+	isNFS            bool
+	portalID         int32
+	iscsiConfigDir   string
 
 	srv      *grpc.Server
 	endpoint string
@@ -65,7 +65,7 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
 	tc := oauth2.NewClient(context.Background(), ts)
 	config := tnclient.NewConfiguration()
-	config.Servers = tnclient.ServerConfigurations{{URL: baseURL}}
+	config.Servers = tnclient.ServerConfigurations{tnclient.ServerConfiguration{URL: baseURL}}
 	config.Debug = true
 	config.HTTPClient = tc
 	client := tnclient.NewAPIClient(config)
@@ -76,18 +76,18 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath 
 	}
 
 	return &Driver{
-		name:           driverName,
-		baseURL:        baseURL,
-		address:        u.Host,
-		nfsStoragePath: nfsStoragePath,
+		name:             driverName,
+		baseURL:          baseURL,
+		address:          u.Host,
+		nfsStoragePath:   nfsStoragePath,
 		iscsiStoragePath: iscsiStoragePath,
-		portalID: portalID,
-		nodeID:         nodeID,
-		client:         client,
-		isController:   isController,
-		isNFS:          isNFS,
-		endpoint:       endpoint,
-		mounter:        mount.New(""),
+		portalID:         portalID,
+		nodeID:           nodeID,
+		client:           client,
+		isController:     isController,
+		isNFS:            isNFS,
+		endpoint:         endpoint,
+		mounter:          mount.New(""),
 	}, nil
 }
 

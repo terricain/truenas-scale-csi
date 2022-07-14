@@ -1,6 +1,6 @@
 module github.com/terrycain/truenas-scale-csi
 
-go 1.18
+go 1.17
 
 require (
 	github.com/container-storage-interface/spec v1.6.0

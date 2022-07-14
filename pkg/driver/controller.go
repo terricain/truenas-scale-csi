@@ -43,10 +43,9 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	// TODO(iscsi)
 	if d.isNFS {
 		return d.nfsCreateVolume(ctx, req)
+	} else {
+		return d.iscsiCreateVolume(ctx, req)
 	}
-
-	accessMode := req.VolumeCapabilities[0].GetAccessMode().GetMode()
-	return nil, status.Errorf(codes.Unimplemented, "%v not supported yet", accessMode)
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
