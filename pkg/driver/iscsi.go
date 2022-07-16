@@ -547,3 +547,60 @@ func (d *Driver) iscsiListVolumes(ctx context.Context) ([]*csi.ListVolumesRespon
 
 	return result, nil
 }
+
+func (d *Driver) iscsiNodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+	// Validate volume context
+	foundContextKeys := 0 //nolint:ifshort
+	for k := range req.GetVolumeContext() {
+		switch k {
+		case ISCSIVolumeContextTargetPortal:
+			foundContextKeys++
+		case ISCSIVolumeContextIQN:
+			foundContextKeys++
+		case ISCSIVolumeContextLUN:
+			foundContextKeys++
+		case ISCSIVolumeContextPortals:
+			foundContextKeys++
+		}
+	}
+	if foundContextKeys != 4 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("%s, %s, %s, %s keys missing from volume context", ISCSIVolumeContextTargetPortal, ISCSIVolumeContextIQN, ISCSIVolumeContextLUN, ISCSIVolumeContextPortals))
+	}
+
+	// req.GetVolumeCapability().GetMount().GetMountFlags()
+	log.Debug().Interface("req", req).Msg("Getting ISCSI info from request")
+	iscsiInfo, err := getISCSIInfo(req)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	libConfigPath := d.getISCSILibConfigPath(req.GetVolumeId())
+	log.Debug().Str("config_path", libConfigPath).Msg("Generated lib config path")
+	diskMounter := getISCSIDiskMounter(iscsiInfo, req)
+
+	util := &ISCSIUtil{}
+	log.Debug().Msg("Attaching disk")
+	if _, err = util.AttachDisk(*diskMounter, libConfigPath); err != nil {
+		log.Error().Err(err).Msg("Failed to attach disk")
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &csi.NodePublishVolumeResponse{}, nil
+}
+
+func (d *Driver) iscsiNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+	targetPath := req.GetTargetPath()
+
+	libConfigPath := d.getISCSILibConfigPath(req.GetVolumeId())
+	log.Debug().Str("config_path", libConfigPath).Msg("Generated lib config path")
+	diskUnmounter := getISCSIDiskUnmounter(req)
+
+	iscsiutil := &ISCSIUtil{}
+	log.Debug().Msg("Detaching disk")
+	if err := iscsiutil.DetachDisk(*diskUnmounter, targetPath, libConfigPath); err != nil {
+		log.Error().Err(err).Msg("Failed to un-attach disk")
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &csi.NodeUnpublishVolumeResponse{}, nil
+}

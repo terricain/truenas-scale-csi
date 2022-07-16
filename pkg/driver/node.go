@@ -121,9 +121,11 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return nil, status.Error(codes.InvalidArgument, "Target path not provided")
 	}
 
-	// TODO(iscsi)
-	if strings.HasPrefix(req.GetVolumeId(), NFSVolumePrefix) {
+	switch {
+	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
 		return d.nfsNodePublishVolume(ctx, req)
+	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+		return d.iscsiNodePublishVolume(ctx, req)
 	}
 
 	return nil, status.Errorf(codes.Unimplemented, "Volume type: %s not supported", req.GetVolumeId())
@@ -138,9 +140,11 @@ func (d *Driver) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
 	}
 
-	// TODO(iscsi)
-	if strings.HasPrefix(req.GetVolumeId(), NFSVolumePrefix) {
+	switch {
+	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
 		return d.nfsNodeUnpublishVolume(ctx, req)
+	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+		return d.iscsiNodeUnpublishVolume(ctx, req)
 	}
 
 	return nil, status.Errorf(codes.Unimplemented, "Volume type: %s not supported", req.GetVolumeId())

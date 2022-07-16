@@ -165,3 +165,7 @@ func (d *Driver) setReady(state bool) {
 	defer d.readyMu.Unlock()
 	d.ready = state
 }
+
+func (d *Driver) getISCSILibConfigPath(id string) string {
+	return path.Join(d.iscsiConfigDir, id+".json")
+}

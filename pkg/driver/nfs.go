@@ -377,7 +377,6 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 	targetPath := req.GetTargetPath()
-
 	log.Info().Str("volume_id", volumeID).Str("target_path", targetPath).Msg("NodeUnpublishVolume unmounting volume")
 	err := mountutils.CleanupMountPoint(targetPath, d.mounter, true)
 	if err != nil {
