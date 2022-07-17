@@ -53,7 +53,7 @@ type Driver struct {
 	ready   bool
 }
 
-func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS bool) (*Driver, error) {
+func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS, debugLogging bool) (*Driver, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse address: %w", err)
@@ -66,7 +66,7 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath 
 	tc := oauth2.NewClient(context.Background(), ts)
 	config := tnclient.NewConfiguration()
 	config.Servers = tnclient.ServerConfigurations{tnclient.ServerConfiguration{URL: baseURL}}
-	config.Debug = true
+	config.Debug = debugLogging
 	config.HTTPClient = tc
 	client := tnclient.NewAPIClient(config)
 

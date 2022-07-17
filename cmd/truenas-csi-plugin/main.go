@@ -39,6 +39,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to parse log level")
 	}
 	zerolog.SetGlobalLevel(level)
+	debugLogging := *logLevel == "debug"
 
 	var drv *driver.Driver
 
@@ -79,17 +80,17 @@ func main() {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
 		log.Debug().Msg("Initiating controller driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	} else {
-		if !isNFS && *logLevel == "debug" {
+		if !isNFS && debugLogging {
 			iscsiLib.EnableDebugLogging(os.Stdout)
 		}
 
 		// Node mode doesnt require qnap access
 		log.Debug().Msg("Initiating node driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	}

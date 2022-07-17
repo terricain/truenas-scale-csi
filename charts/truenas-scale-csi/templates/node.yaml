@@ -37,7 +37,7 @@ spec:
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
-            - --health-port=29653
+            - --health-port={{ include "truenas-scale-csi.nodeLivenessProbeHealthPort" . }}
             - --v=2
           volumeMounts:
             - name: socket-dir

@@ -109,6 +109,14 @@ Create the name of the node daemonset to use
 {{- printf "%s-node" (include "truenas-scale-csi.fullname" .) }}
 {{- end }}
 
+{{- define "truenas-scale-csi.nodeLivenessProbeHealthPort" -}}
+{{- if eq .Values.settings.type "nfs" -}}
+29653
+{{- else -}}
+29654
+{{- end -}}
+{{- end -}}
+
 {{/*
 Log level
 */}}
