@@ -352,6 +352,22 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 		return status.Errorf(codes.NotFound, "Volume ID %s not found", req.VolumeId)
 	}
 
+	// Force delete the target first, else delete dataset will spam "device busy"
+	existingTarget, targetExists, err := FindISCSITarget(ctx, d.client, func(target tnclient.ISCSITarget) bool {
+		return target.GetName() == req.GetVolumeId()
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to look for existing iSCSI targets")
+		return err
+	}
+	if targetExists {
+		_, err = d.client.IscsiTargetApi.DeleteISCSITarget(ctx, existingTarget.GetId()).Body(true).Execute()
+		if err != nil {
+			log.Error().Err(err).Interface("iscsi_target_id", existingTarget.GetId()).Msg("Failed to delete iSCSI Target")
+			return err
+		}
+	}
+
 	// Deleting the dataset will remove ?
 	datasetName := strings.Join([]string{d.iscsiStoragePath, req.VolumeId}, "/")
 
