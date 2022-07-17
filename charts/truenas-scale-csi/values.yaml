@@ -13,6 +13,11 @@ settings:
   # in a directory sort of layout. The following command will list all paths:
   #   curl -s -X GET "http://NAS/api/v2.0/pool/dataset" -H "Authorization: Bearer API_TOKEN" | jq '.[].id'
   nfsStoragePath: ""
+  iscsiStoragePath: ""
+
+  # -- TrueNAS portal ID for iSCSI
+  #   curl -s -X GET "http://nas01/api/v2.0/iscsi/portal" -H "Authorization: Bearer ${TOKEN}" | jq '.'
+  portalID: ""
 
   # -- Enable debug logs
   enableDebugLogging: false

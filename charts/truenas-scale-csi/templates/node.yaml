@@ -81,7 +81,12 @@ spec:
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--url=$(TRUENAS_URL)"
+            {{- if eq .Values.settings.type "nfs" }}
             - "--nfs-storage-path=$(NFS_PATH)"
+            {{- else }}
+            - "--iscsi-storage-path=$(ISCSI_PATH)"
+            - "--portal=$(PORTAL_ID)"
+            {{- end }}
             - "--node-id=$(NODE_ID)"
             - "--log-level=$(LOG_LEVEL)"
             - "--type=$(CSI_TYPE)"
@@ -90,8 +95,15 @@ spec:
               value: unix:///csi/csi.sock
             - name: TRUENAS_URL
               value: {{ .Values.settings.url | quote }}
+            {{- if eq .Values.settings.type "nfs" }}
             - name: NFS_PATH
               value: {{ .Values.settings.nfsStoragePath | quote }}
+            {{- else }}
+            - name: ISCSI_PATH
+              value: {{ .Values.settings.iscsiStoragePath | quote }}
+            - name: PORTAL_ID
+              value: {{ .Values.settings.portalID | quote }}
+            {{- end }}
             - name: LOG_LEVEL
               value: {{ (include "truenas-scale-csi.logLevel" .) | quote }}
             - name: CSI_TYPE
@@ -111,8 +123,10 @@ spec:
             - name: host-root
               mountPath: /host
               mountPropagation: "HostToContainer"
-            #- name: iscsi-csi-run-dir
-            #  mountPath: /var/run/qnap.terrycain.github.com
+            {{- if eq .Values.settings.type "iscsi" }}
+            - name: iscsi-csi-run-dir
+              mountPath: /var/run/iscsi.truenas-scale.terrycain.github.com
+            {{- end }}
       volumes:
         - name: socket-dir
           hostPath:
@@ -133,6 +147,8 @@ spec:
           hostPath:
             path: /
             type: Directory
-        #- name: iscsi-csi-run-dir
-        #  hostPath:
-        #    path: /var/run/iscsi.truenas.terrycain.github.com
+        {{- if eq .Values.settings.type "iscsi" }}
+        - name: iscsi-csi-run-dir
+          hostPath:
+            path: /var/run/iscsi.truenas-scale.terrycain.github.com
+        {{- end }}

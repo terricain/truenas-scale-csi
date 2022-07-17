@@ -38,7 +38,12 @@ spec:
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--url=$(TRUENAS_URL)"
+            {{- if eq .Values.settings.type "nfs" }}
             - "--nfs-storage-path=$(NFS_PATH)"
+            {{- else }}
+            - "--iscsi-storage-path=$(ISCSI_PATH)"
+            - "--portal=$(PORTAL_ID)"
+            {{- end }}
             - "--node-id=$(NODE_ID)"
             - "--log-level=$(LOG_LEVEL)"
             - "--controller"
@@ -48,8 +53,15 @@ spec:
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
             - name: TRUENAS_URL
               value: {{ .Values.settings.url | quote }}
+            {{- if eq .Values.settings.type "nfs" }}
             - name: NFS_PATH
               value: {{ .Values.settings.nfsStoragePath | quote }}
+            {{- else }}
+            - name: ISCSI_PATH
+              value: {{ .Values.settings.iscsiStoragePath | quote }}
+            - name: PORTAL_ID
+              value: {{ .Values.settings.portalID | quote }}
+            {{- end }}
             - name: LOG_LEVEL
               value: {{ (include "truenas-scale-csi.logLevel" .) | quote }}
             - name: CSI_TYPE
