@@ -239,7 +239,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 	}, nil
 }
 
-func (d *Driver) nfsGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+func (d *Driver) nfsGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) { //nolint:unparam
 	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.nfsStoragePath).Execute()
 	if err != nil {
 		log.Error().Err(err).Interface("dataset_id", d.nfsStoragePath).Msg("Failed to get dataset")
@@ -313,7 +313,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 	return result, nil
 }
 
-func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) { //nolint:unparam
 	volCap := req.GetVolumeCapability()
 	volumeID := req.GetVolumeId()
 	targetPath := req.GetTargetPath()
@@ -374,7 +374,7 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) { //nolint:unparam
 	volumeID := req.GetVolumeId()
 	targetPath := req.GetTargetPath()
 	log.Info().Str("volume_id", volumeID).Str("target_path", targetPath).Msg("NodeUnpublishVolume unmounting volume")

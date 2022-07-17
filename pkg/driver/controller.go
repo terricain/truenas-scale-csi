@@ -39,11 +39,11 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume Volume capabilities must be provided")
 	}
+
 	if d.isNFS {
 		return d.nfsCreateVolume(ctx, req)
-	} else {
-		return d.iscsiCreateVolume(ctx, req)
 	}
+	return d.iscsiCreateVolume(ctx, req)
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
@@ -70,9 +70,8 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	if d.isNFS {
 		return d.nfsValidateVolumeCapabilities(ctx, req)
-	} else {
-		return d.iscsiValidateVolumeCapabilities(ctx, req)
 	}
+	return d.iscsiValidateVolumeCapabilities(ctx, req)
 }
 
 func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
@@ -103,9 +102,8 @@ func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	if d.isNFS {
 		return d.nfsGetCapacity(ctx, req)
-	} else {
-		return d.iscsiGetCapacity(ctx, req)
 	}
+	return d.iscsiGetCapacity(ctx, req)
 }
 
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {

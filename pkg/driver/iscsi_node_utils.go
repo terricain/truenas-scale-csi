@@ -17,8 +17,9 @@ Modified to change logging
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
 	"google.golang.org/grpc/codes"

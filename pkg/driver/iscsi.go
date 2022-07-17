@@ -450,7 +450,7 @@ func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.V
 	}, nil
 }
 
-func (d *Driver) iscsiGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+func (d *Driver) iscsiGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) { //nolint:unparam
 	// TODO(iscsi) refactor this out as is pretty much same as in nfsGetCapacity
 	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.iscsiStoragePath).Execute()
 	if err != nil {
@@ -523,6 +523,10 @@ func (d *Driver) iscsiListVolumes(ctx context.Context) ([]*csi.ListVolumesRespon
 		_, exists := extentTargetMap[target.GetId()]
 		return exists
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get list of iSCSI targets")
+		return nil, err
+	}
 
 	result := make([]*csi.ListVolumesResponse_Entry, 0)
 
@@ -548,7 +552,7 @@ func (d *Driver) iscsiListVolumes(ctx context.Context) ([]*csi.ListVolumesRespon
 	return result, nil
 }
 
-func (d *Driver) iscsiNodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func (d *Driver) iscsiNodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) { //nolint:unparam
 	// Validate volume context
 	foundContextKeys := 0 //nolint:ifshort
 	for k := range req.GetVolumeContext() {
@@ -588,7 +592,7 @@ func (d *Driver) iscsiNodePublishVolume(ctx context.Context, req *csi.NodePublis
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (d *Driver) iscsiNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (d *Driver) iscsiNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) { //nolint:unparam
 	targetPath := req.GetTargetPath()
 
 	libConfigPath := d.getISCSILibConfigPath(req.GetVolumeId())

@@ -58,7 +58,7 @@ func main() {
 		if *iscsiStoragePath == "" {
 			log.Fatal().Msg("iSCSI storage path flag must be provided")
 		}
-	} else {
+	} else { //nolint:gocritic
 		if *nfsStoragePath == "" {
 			log.Fatal().Msg("iSCSI storage path flag must be provided")
 		}
