@@ -4,17 +4,17 @@ description: A TrueNAS Scale CSI provider
 
 type: application
 version: 0.1.0
-appVersion: "1.16.0"
+appVersion: "0.1.0"
 
-#home: github link
-#icon: Some png
+home: https://github.com/terrycain/truenas-scale-csi
+
 keywords:
   - csi
   - nfs
   - iscsi
   - truenas
-#sources:
-#  - github link
+sources:
+  - https://github.com/terrycain/truenas-scale-csi
 maintainers:
   - name: terrycain
 engine: gotpl
