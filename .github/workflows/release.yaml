@@ -20,9 +20,7 @@ jobs:
             ${{ runner.os }}-buildx
       - name: Get the version
         id: get_version
-        run: |
-          TAG=${{ github.event.release.tag_name }}
-          echo ::set-output name=version::${TAG#v}
+        run: echo ::set-output name=version::${GITHUB_REF#refs/*/v}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
