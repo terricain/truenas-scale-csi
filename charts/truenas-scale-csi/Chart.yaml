@@ -3,7 +3,7 @@ name: truenas-scale-csi
 description: A TrueNAS Scale CSI provider
 
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "0.1.0"
 
 home: https://github.com/terrycain/truenas-scale-csi
