@@ -1,6 +1,7 @@
 # TrueNAS Scale CSI Driver
 
-This is a work-in-progress Kubernetes CSI driver which lets you automatically provision NFS (and eventually iSCSI) volumes hosted on a TrueNAS Scale box.
+This is a work-in-progress Kubernetes CSI driver which lets you automatically provision
+NFS and eventually iSCSI volumes hosted on a TrueNAS Scale box.
 
 ## How to install
 
@@ -13,7 +14,9 @@ settings:
   accessTokenSecretName: "some_existing_secret"
 ```
 
-Checkout the chart [values.yaml](./charts/values.yaml) for an explanation for the nfsStoragePath and access Token values.
+Installing the iSCSI driver is near enough identical.
+
+Checkout the chart [values.yaml](./charts/truenas-scale-csi/values.yaml) for an explanation for the nfs/iSCSI StoragePath and access Token values.
 
 To install the Helm chart: (this assumes you've cloned the repo as the chart isnt hosted yet)
 ```shell
@@ -40,3 +43,11 @@ metadata:
   name: truenas-access-token
 ```
 
+## Roadmap
+
+A vague TODO list of features I hope to implement
+
+* Allow ignoring of TLS certificates (for use with truenas's in lab environments)
+* Increase logging of GRPC requests
+* Volume expansion
+* Volume snapshots
