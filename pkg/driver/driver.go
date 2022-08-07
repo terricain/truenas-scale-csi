@@ -2,8 +2,10 @@ package driver
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -53,7 +55,7 @@ type Driver struct {
 	ready   bool
 }
 
-func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS, debugLogging bool) (*Driver, error) {
+func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS, debugLogging bool, ignoreTLS bool) (*Driver, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse address: %w", err)
@@ -62,8 +64,16 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath 
 		return nil, fmt.Errorf("base URL should end with \"api/v2.0\": %s", u.Path)
 	}
 
+	apiCtx := context.Background()
+	tr := &http.Transport{
+		// This defaults to false
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: ignoreTLS}, //nolint:gosec
+	}
+	tlsClient := &http.Client{Transport: tr}
+	apiCtx = context.WithValue(apiCtx, oauth2.HTTPClient, tlsClient)
+
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
-	tc := oauth2.NewClient(context.Background(), ts)
+	tc := oauth2.NewClient(apiCtx, ts)
 	config := tnclient.NewConfiguration()
 	config.Servers = tnclient.ServerConfigurations{tnclient.ServerConfiguration{URL: baseURL}}
 	config.Debug = debugLogging

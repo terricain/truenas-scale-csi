@@ -170,10 +170,11 @@ linters:
     - predeclared
     - revive
     - unconvert
+    - exportloopref
 
   disable:
-    - prealloc
     - scopelint
+    - bodyclose
   presets:
     - bugs
     - unused

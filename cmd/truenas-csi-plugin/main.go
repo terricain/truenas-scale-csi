@@ -26,6 +26,7 @@ func main() {
 		csiType          = flag.String("type", "", "Type of CSI driver either NFS or ISCSI")
 		iscsiStoragePath = flag.String("iscsi-storage-path", "", "iSCSI StoragePool/Dataset path")
 		portalID         = flag.Int("portal", -1, "Portal ID")
+		ignoreTLS        = flag.Bool("ignore-tls", false, "Ignore TLS errors")
 	)
 	flag.Parse()
 
@@ -80,7 +81,7 @@ func main() {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
 		log.Debug().Msg("Initiating controller driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	} else {
@@ -90,7 +91,7 @@ func main() {
 
 		// Node mode doesnt require qnap access
 		log.Debug().Msg("Initiating node driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
 			log.Fatal().Err(err).Msg("Failed to init CSI driver")
 		}
 	}
