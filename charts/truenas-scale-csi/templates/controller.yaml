@@ -48,7 +48,7 @@ spec:
             - "--log-level=$(LOG_LEVEL)"
             - "--controller"
             - "--type=$(CSI_TYPE)"
-            {{- if eq .Values.settings.ignoreTLS }}
+            {{- if .Values.settings.ignoreTLS }}
             - "--ignore-tls"
             {{- end }}
           env:

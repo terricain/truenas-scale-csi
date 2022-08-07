@@ -8,6 +8,10 @@
 * Initial release
 
 # Chart Releases
+## chart-0.2.1 - 07-08-2022
+
+* Fixed erroneous `eq` in comparison
+
 ## chart-0.2.0 - 07-08-2022
 
 * Added `.Values.settings.ignoreTLS` flag into controller args

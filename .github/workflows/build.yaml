@@ -54,17 +54,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/terrycain/truenas-scale-csi:test
-
-  helm:
-    name: helm-validation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Validate Helm chart
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          helm: 2.17.0
-          helmv3: 3.6.0
-          command: |
-            helmv3 template ./charts/truenas-scale-csi | kubeval --strict --kubernetes-version 1.21.0 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
