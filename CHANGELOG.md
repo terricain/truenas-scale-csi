@@ -8,6 +8,10 @@
 * Initial release
 
 # Chart Releases
+## chart-0.2.0 - 07-08-2022
+
+* Added `.Values.settings.ignoreTLS` flag into controller args
+
 ## chart-0.1.1 - 06-08-2022
 
 * Initial release

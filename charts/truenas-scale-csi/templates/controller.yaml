@@ -48,6 +48,9 @@ spec:
             - "--log-level=$(LOG_LEVEL)"
             - "--controller"
             - "--type=$(CSI_TYPE)"
+            {{- if eq .Values.settings.ignoreTLS }}
+            - "--ignore-tls"
+            {{- end }}
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock

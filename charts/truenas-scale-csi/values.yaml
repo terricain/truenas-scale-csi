@@ -25,6 +25,9 @@ settings:
   # -- TrueNAS Access Token secret, should have a field of "token"
   accessTokenSecretName: ""
 
+  # -- If set to true, will ignore TLS when connecting to TrueNAS
+  ignoreTLS: false
+
 storageClass:
   create: true
   annotations: {}
