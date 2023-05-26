@@ -3,7 +3,7 @@ name: Release Charts
 on:
   push:
     branches:
-      - main
+      - '*'
     paths:
       - 'charts/**'
 
@@ -20,11 +20,13 @@ jobs:
           helm: "v3.12.0"
       - name: Validate Helm chart
         run: |
-            helmv3 template ./charts/truenas-scale-csi | kubeconform --kubernetes-version 1.26.0
+            set -eo pipefail
+            helm template ./charts/truenas-scale-csi | kubeconform --kubernetes-version 1.26.0 -output tap
 
   release:
     needs: helm-lint
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:

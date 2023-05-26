@@ -45,7 +45,7 @@ spec:
             - "--portal=$(PORTAL_ID)"
             {{- end }}
             - "--node-id=$(NODE_ID)"
-            - "--log-level=$(LOG_LEVEL)"
+            - "-v={{ .Values.settings.verbosity }}"
             - "--controller"
             - "--type=$(CSI_TYPE)"
             {{- if .Values.settings.ignoreTLS }}
@@ -82,26 +82,36 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
           args:
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
+            - --timeout={{ .Values.settings.sidecarTimeout }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
           imagePullPolicy: "IfNotPresent"
+          {{- with .Values.sidecars.provisioner.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-attacher
-          image: k8s.gcr.io/sig-storage/csi-attacher:v3.5.0
+          image: registry.k8s.io/sig-storage/csi-attacher:v4.3.0
           args:
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
+            - --timeout={{ .Values.settings.sidecarTimeout }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
           imagePullPolicy: "IfNotPresent"
+          {{- with .Values.sidecars.attacher.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/

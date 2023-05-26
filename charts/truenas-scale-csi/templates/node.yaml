@@ -33,12 +33,17 @@ spec:
         {{- toYaml .Values.node.podSecurityContext | nindent 8 }}
       containers:
         - name: liveness-probe
-          image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
+          image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
             - --health-port={{ include "truenas-scale-csi.nodeLivenessProbeHealthPort" . }}
             - --v=2
+          imagePullPolicy: "IfNotPresent"
+          {{- with .Values.sidecars.livenessProbe.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -50,12 +55,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: node-driver-registrar
-          # This is necessary only for systems with SELinux, where
-          # non-privileged sidecar containers cannot access unix domain socket
-          # created by privileged CSI driver container.
-          securityContext:
-            privileged: true
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
           args:
             - --v=2
             - --csi-address=/csi/csi.sock
@@ -65,17 +65,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          imagePullPolicy: "IfNotPresent"
+          {{- with .Values.sidecars.nodeDriverRegistrar.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
         - name: node-server
-          securityContext:  # Taken from the iSCSI driver
-            privileged: true
-            capabilities:
-              add: ["SYS_ADMIN"]
-            allowPrivilegeEscalation: true
+          securityContext:
+            {{- toYaml .Values.node.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
@@ -88,7 +90,7 @@ spec:
             - "--portal=$(PORTAL_ID)"
             {{- end }}
             - "--node-id=$(NODE_ID)"
-            - "--log-level=$(LOG_LEVEL)"
+            - "-v={{ .Values.settings.verbosity }}"
             - "--type=$(CSI_TYPE)"
           env:
             - name: CSI_ENDPOINT

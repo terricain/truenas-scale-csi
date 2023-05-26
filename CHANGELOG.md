@@ -20,6 +20,15 @@
 * Initial release
 
 # Chart Releases
+
+## chart-0.3.0 - 26-05-2023
+
+* Added and bumped timeout for CSI sidecars.
+* Added `fsGroupPolicy` to CSIDriver resource.
+* Bumped sidecar versions.
+* Migrated from `k8s.gcr.io` to `registry.k8s.io`.
+* Configured security contexts.
+
 ## chart-0.2.1 - 07-08-2022
 
 * Fixed erroneous `eq` in comparison.

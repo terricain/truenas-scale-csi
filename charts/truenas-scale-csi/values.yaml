@@ -19,8 +19,7 @@ settings:
   #   curl -s -X GET "http://nas01/api/v2.0/iscsi/portal" -H "Authorization: Bearer ${TOKEN}" | jq '.'
   portalID: ""
 
-  # -- Enable debug logs
-  enableDebugLogging: false
+  verbosity: 4
 
   # -- TrueNAS Access Token secret, should have a field of "token"
   accessTokenSecretName: ""
@@ -28,18 +27,37 @@ settings:
   # -- If set to true, will ignore TLS when connecting to TrueNAS
   ignoreTLS: false
 
+  # -- Timeout on running actions, useful if TrueNAS is being slow.
+  sidecarTimeout: 60s
+
 storageClass:
   create: true
   annotations: {}
   namePrefix: "truenas-" # Will either be truenas-nfs or truenas-iscsi
-
-
 
 # ---
 image:
   repository: ghcr.io/terrycain/truenas-scale-csi
   pullPolicy: IfNotPresent
   tag: ""
+
+sidecars:
+  provisioner:
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+  attacher:
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+  nodeDriverRegistrar:
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+  livenessProbe:
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
 
 imagePullSecrets: []
 nameOverride: ""
@@ -64,14 +82,30 @@ controller:
   # More than 1 is not supported yet.
   replicaCount: 1
   podAnnotations: {}
-  podSecurityContext: {}
-  securityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
   resources: {}
 
 node:
   podAnnotations: {}
-  podSecurityContext: {}
-  securityContext: {}
+  # The node pod must be run as root to handle NFS and iSCSI mounts
+  # See the sidecar security contexts for more finegrained permissioning
+  podSecurityContext:
+    runAsNonRoot: false
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+  securityContext:
+    readOnlyRootFilesystem: true
+    privileged: true
+    capabilities:
+      add: [ "SYS_ADMIN" ]
   resources: {}
 
 nfsCSIDriverName: "nfs.truenas-scale.terrycain.github.com"

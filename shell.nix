@@ -7,6 +7,10 @@
       docker-client
       docker-compose
 
+      kubeconform
+      kubernetes-helm
+      kubesec
+
       # Golang utilities
       go
       gotestsum

@@ -9,3 +9,4 @@ spec:
   volumeLifecycleModes:
     - Persistent
   storageCapacity: true
+  fsGroupPolicy: File
