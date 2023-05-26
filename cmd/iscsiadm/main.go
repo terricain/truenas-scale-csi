@@ -4,7 +4,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/rs/zerolog/log"
+	"k8s.io/klog/v2"
 )
 
 var iscsiPaths = []string{
@@ -21,7 +21,8 @@ func main() {
 	}
 
 	if err := syscall.Chroot(chrootDir); err != nil {
-		log.Fatal().Err(err).Str("chroot_dir", chrootDir).Msg("Failed to chroot")
+		klog.ErrorS(err, "failed to chroot", "chrootDir", chrootDir)
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	iscsiadmPath := os.Getenv("ISCSIADM_PATH")
@@ -35,7 +36,8 @@ func main() {
 	}
 
 	if iscsiadmPath == "" {
-		log.Fatal().Msg("iscsiadm binary not found, consider specifying ISCSIADM_PATH")
+		klog.Error("iscsiadm binary not found, consider specifying ISCSIADM_PATH")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	// Replace first argument which is the binary path with the real
@@ -43,6 +45,7 @@ func main() {
 	args := []string{iscsiadmPath}
 	args = append(args, os.Args[1:]...)
 	if err := syscall.Exec(iscsiadmPath, args, os.Environ()); err != nil {
-		log.Fatal().Err(err).Msg("Failed to exec")
+		klog.ErrorS(err, "failed to exec", "execPath", iscsiadmPath)
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 }

@@ -2,67 +2,97 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	flag "github.com/spf13/pflag"
+	"k8s.io/component-base/featuregate"
+
 	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+
 	"github.com/terrycain/truenas-scale-csi/pkg/driver"
+
+	logsapi "k8s.io/component-base/logs/api/v1"
+	"k8s.io/component-base/logs/json"
+	"k8s.io/klog/v2"
 )
 
+var featureGate = featuregate.NewFeatureGate()
+
 func main() {
+	fs := flag.NewFlagSet("truenas-csi-driver", flag.ExitOnError)
+
+	if err := logsapi.RegisterLogFormat(logsapi.JSONLogFormat, json.Factory{}, logsapi.LoggingBetaOptions); err != nil {
+		klog.ErrorS(err, "failed to register JSON log format")
+	}
+
 	var (
-		endpoint         = flag.String("endpoint", "", "CSI endpoint")
-		truenasURL       = flag.String("url", "", "TrueNAS Scale URL (ends with api/v2.0)")
-		nfsStoragePath   = flag.String("nfs-storage-path", "", "NFS StoragePool/Dataset path")
-		logLevel         = flag.String("log-level", "info", "Log level (info/warn/fatal/error)")
-		version          = flag.Bool("version", false, "Print the version and exit")
-		controller       = flag.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
-		nodeID           = flag.String("node-id", "", "Node ID")
-		csiType          = flag.String("type", "", "Type of CSI driver either NFS or ISCSI")
-		iscsiStoragePath = flag.String("iscsi-storage-path", "", "iSCSI StoragePool/Dataset path")
-		portalID         = flag.Int("portal", -1, "Portal ID")
-		ignoreTLS        = flag.Bool("ignore-tls", false, "Ignore TLS errors")
+		endpoint         = fs.String("endpoint", "", "CSI endpoint")
+		truenasURL       = fs.String("url", "", "TrueNAS Scale URL (ends with api/v2.0)")
+		nfsStoragePath   = fs.String("nfs-storage-path", "", "NFS StoragePool/Dataset path")
+		logLevel         = fs.String("log-level", "info", "Log level (info/warn/fatal/error)")
+		version          = fs.Bool("version", false, "Print the version and exit")
+		controller       = fs.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
+		nodeID           = fs.String("node-id", "", "Node ID")
+		csiType          = fs.String("type", "", "Type of CSI driver either NFS or ISCSI")
+		iscsiStoragePath = fs.String("iscsi-storage-path", "", "iSCSI StoragePool/Dataset path")
+		portalID         = fs.Int("portal", -1, "Portal ID")
+		ignoreTLS        = fs.Bool("ignore-tls", false, "Ignore TLS errors")
 	)
-	flag.Parse()
+	loggingConfig := logsapi.NewLoggingConfiguration()
+
+	if err := logsapi.AddFeatureGates(featureGate); err != nil {
+		klog.ErrorS(err, "failed to add feature gates")
+	}
+
+	logsapi.AddFlags(loggingConfig, fs)
+
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		panic(err)
+	}
+
+	if err := logsapi.ValidateAndApply(loggingConfig, featureGate); err != nil {
+		klog.ErrorS(err, "failed to validate and apply logging configuration")
+	}
 
 	if *version {
-		fmt.Printf("%s - %s (%s)\n", driver.Version, driver.Commit, driver.GitTreeState)
+		versionInfo, err := driver.GetVersionJSON()
+		if err != nil {
+			klog.ErrorS(err, "failed to get version")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+		fmt.Println(versionInfo)
 		os.Exit(0)
 	}
 
-	level, err := zerolog.ParseLevel(*logLevel)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to parse log level")
-	}
-	zerolog.SetGlobalLevel(level)
 	debugLogging := *logLevel == "debug"
 
-	var drv *driver.Driver
-
 	if *nodeID == "" {
-		log.Fatal().Msg("Node ID must be specified")
+		klog.Error("Node ID must be specified")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	if *csiType != "nfs" && *csiType != "iscsi" {
-		log.Fatal().Str("type", *csiType).Msg("type must be either NFS or ISCSI")
+		klog.Error("--type must be either NFS or ISCSI")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 	isNFS := *csiType == "nfs"
 
 	if !isNFS {
 		if *portalID == -1 {
-			log.Fatal().Msg("portal flag must be provided")
+			klog.Error("--portal must be specified")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		if *iscsiStoragePath == "" {
-			log.Fatal().Msg("iSCSI storage path flag must be provided")
+			klog.Error("--iscsi-storage-path must be specified")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	} else { //nolint:gocritic
 		if *nfsStoragePath == "" {
-			log.Fatal().Msg("iSCSI storage path flag must be provided")
+			klog.Error("--nfs-storage-path must be specified")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	}
 
@@ -74,15 +104,19 @@ func main() {
 		} else {
 			*endpoint = "unix:///var/run/" + driver.ISCSIDriverName + "/csi.sock"
 		}
-		log.Info().Str("endpoint", *endpoint).Msg("Endpoint")
+		klog.V(5).InfoS("[Debug] Endpoint setting", "endpoint", *endpoint)
 	}
+
+	var drv *driver.Driver
+	var err error
 
 	if *controller {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
-		log.Debug().Msg("Initiating controller driver")
+		klog.V(5).Info("Initiating controller driver")
 		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
-			log.Fatal().Err(err).Msg("Failed to init CSI driver")
+			klog.ErrorS(err, "failed to init CSI driver")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	} else {
 		if !isNFS && debugLogging {
@@ -90,14 +124,16 @@ func main() {
 		}
 
 		// Node mode doesnt require qnap access
-		log.Debug().Msg("Initiating node driver")
+		klog.V(5).Info("Initiating node driver")
 		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
-			log.Fatal().Err(err).Msg("Failed to init CSI driver")
+			klog.ErrorS(err, "failed to init CSI driver")
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	}
 
 	if err = run(drv); err != nil {
-		log.Error().Err(err).Msg("Failed to run CSI driver")
+		klog.ErrorS(err, "failed to run CSI driver")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 }
 
@@ -109,7 +145,7 @@ func run(drv *driver.Driver) error {
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		log.Info().Msgf("Caught signal %s", sig.String())
+		klog.Infof("Caught signal %s", sig.String())
 		cancel()
 	}()
 	return drv.Run(ctx)
