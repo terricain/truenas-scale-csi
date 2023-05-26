@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/klog/v2"
+
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -67,7 +68,7 @@ func nfsCheckCaps(caps []*csi.VolumeCapability) error {
 func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	// Validate NFS capabilities
 	if err := nfsCheckCaps(req.VolumeCapabilities); err != nil {
-		log.Error().Err(err).Msg("Invalid volume caps")
+		klog.ErrorS(err, "Invalid volume caps")
 		return nil, err
 	}
 
@@ -77,12 +78,12 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	// Could iterate though a pool/dataset and check quotas but meh
 	//
 	size, err := extractStorage(req.CapacityRange)
-	log.Debug().Int64("raw_size_requested_bytes", size).Msg("Raw size requested in bytes")
+	klog.V(5).InfoS("[Debug] Raw size requested in bytes", "rawSizeRequestedBytes", size)
 	if err != nil {
 		return nil, status.Errorf(codes.OutOfRange, "invalid capacity range: %v", err)
 	}
 	sizeGB := size / (1 * giB)
-	log.Debug().Int64("raw_size_gib", sizeGB).Msg("Raw size requested in gigabytes")
+	klog.V(5).InfoS("[Debug] Raw size requested in gigabytes", "rawSizeGibibytes", sizeGB)
 
 	datasetName := strings.Join([]string{d.nfsStoragePath, volumeID}, "/")
 	datasetMountpoint := ""
@@ -92,15 +93,15 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		return dataset.GetName() == datasetName
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		klog.ErrorS(err, "Failed to look for existing datasets")
 		return nil, status.Errorf(codes.Internal, "failed to look for existing datasets: %v", err)
 	}
 
 	if datasetExists {
 		datasetMountpoint = existingDataset.GetMountpoint()
-		log.Debug().Msg("Dataset exists, skipping")
+		klog.V(5).Info("[Debug] Dataset exists, skipping")
 	} else {
-		log.Debug().Msg("Dataset does not exist, creating")
+		klog.V(5).Info("[Debug] Dataset does not exist, creating")
 
 		datasetRequest := d.client.DatasetApi.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
 			Name:              datasetName,
@@ -112,7 +113,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		})
 		datasetResponse, _, err2 := datasetRequest.Execute()
 		if err2 != nil {
-			log.Error().Err(err2).Str("datasetName", datasetName).Msg("Failed to create dataset")
+			klog.ErrorS(err2, "failed to create dataset", "datasetName", datasetName)
 			return nil, err2
 		}
 		datasetMountpoint = datasetResponse.GetMountpoint()
@@ -122,7 +123,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		return len(share.GetPaths()) == 1 && share.GetPaths()[0] == datasetMountpoint
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to look for existing NFS shares")
+		klog.ErrorS(err, "failed to look for existing NFS shares")
 		return nil, status.Errorf(codes.Internal, "failed to look for existing NFS shares: %v", err)
 	}
 
@@ -138,7 +139,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		})
 		_, _, err = sharingRequest.Execute()
 		if err != nil {
-			log.Error().Err(err).Str("datasetName", datasetName).Str("mountpoint", datasetMountpoint).Msg("Failed to create NFS share")
+			klog.ErrorS(err, "failed to create NFS share", "datasetName", datasetName, "mountpoint", datasetMountpoint)
 			return nil, err
 		}
 	}
@@ -170,14 +171,14 @@ func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReque
 		return dataset.GetName() == datasetName
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		klog.ErrorS(err, "failed to look for existing datasets")
 		return err
 	}
 
 	if datasetExists {
 		_, err = d.client.DatasetApi.DeleteDataset(ctx, existingDataset.GetId()).Execute()
 		if err != nil {
-			log.Error().Err(err).Interface("dataset_id", existingDataset.GetId()).Msg("Failed to delete Dataset")
+			klog.ErrorS(err, "failed to delete Dataset", "datasetID", existingDataset.GetId())
 			return err
 		}
 	}
@@ -191,7 +192,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 	}
 
 	if err := nfsCheckCaps(req.VolumeCapabilities); err != nil {
-		log.Error().Err(err).Msg("Invalid volume caps")
+		klog.ErrorS(err, "invalid volume caps")
 		return nil, err
 	}
 
@@ -216,7 +217,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 		return dataset.GetName() == datasetName
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to look for existing datasets")
+		klog.ErrorS(err, "failed to look for existing datasets")
 		return nil, status.Errorf(codes.Internal, "failed to look for existing datasets: %v", err)
 	}
 
@@ -242,13 +243,13 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 func (d *Driver) nfsGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) { //nolint:unparam
 	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.nfsStoragePath).Execute()
 	if err != nil {
-		log.Error().Err(err).Interface("dataset_id", d.nfsStoragePath).Msg("Failed to get dataset")
+		klog.ErrorS(err, "failed to get dataset", "datasetID", d.nfsStoragePath)
 		return nil, status.Errorf(codes.Internal, "Failed to get NFS dataset: %s", err.Error())
 	}
 
 	available, err := strconv.ParseInt(resp.Available.GetRawvalue(), 10, 64)
 	if err != nil {
-		log.Error().Interface("available", resp.Available).Err(err).Msg("Failed parse available to int64")
+		klog.ErrorS(err, "failed parse available to int64", "available", resp.Available)
 		return nil, status.Errorf(codes.Internal, "Failed to parse available bytes: %s", err.Error())
 	}
 
@@ -266,7 +267,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 		return strings.HasPrefix(dataset.GetName(), nfsStoragePrefix)
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to get list of datasets")
+		klog.ErrorS(err, "failed to get list of datasets")
 		return nil, err
 	}
 
@@ -285,7 +286,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 		return exists
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to get list of NFS shares")
+		klog.ErrorS(err, "failed to get list of NFS shares")
 		return nil, err
 	}
 
@@ -298,7 +299,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 		quotaComp := dataset.GetRefquota()
 		quota, err := strconv.ParseInt(quotaComp.GetRawvalue(), 10, 64)
 		if err != nil {
-			log.Error().Interface("quota_composite", quotaComp).Err(err).Msg("Failed parse quota to int64")
+			klog.ErrorS(err, "failed parse quota to int64", "quota_composite", quotaComp)
 			return nil, err
 		}
 
@@ -358,7 +359,7 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		return &csi.NodePublishVolumeResponse{}, nil
 	}
 
-	log.Info().Str("volume_id", volumeID).Str("nfs_source", source).Str("target_path", targetPath).Strs("mount_options", mountOptions).Msg("NodePublishVolume")
+	klog.V(5).InfoS("[Debug] mounting options", "volume_id", volumeID, "nfs_source", source, "target_path", targetPath, "mount_options", mountOptions)
 	err = d.mounter.Mount(source, targetPath, "nfs", mountOptions)
 	if err != nil {
 		if os.IsPermission(err) {
@@ -370,20 +371,20 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	log.Info().Str("volume_id", volumeID).Str("nfs_source", source).Str("target_path", targetPath).Msg("Volume mount successful")
+	klog.InfoS("mounting NFS volume success", "volume_id", volumeID, "nfs_source", source, "target_path", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
 func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) { //nolint:unparam
 	volumeID := req.GetVolumeId()
 	targetPath := req.GetTargetPath()
-	log.Info().Str("volume_id", volumeID).Str("target_path", targetPath).Msg("NodeUnpublishVolume unmounting volume")
+	klog.V(5).InfoS("[Debug] unmounting volume", "volume_id", volumeID, "target_path", targetPath)
 	err := mountutils.CleanupMountPoint(targetPath, d.mounter, true)
 	if err != nil {
-		log.Error().Str("volume_id", volumeID).Str("target_path", targetPath).Err(err).Msg("NodeUnpublishVolume failed unmounting volume")
+		klog.ErrorS(err, "failed unmounting volume", "volume_id", volumeID, "target_path", targetPath)
 		return nil, status.Errorf(codes.Internal, "failed to unmount target %q: %v", targetPath, err)
 	}
-	log.Info().Str("volume_id", volumeID).Str("target_path", targetPath).Msg("Volume unmount successful")
+	klog.InfoS("unmounting NFS volume success", "volume_id", volumeID)
 
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }

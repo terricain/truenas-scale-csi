@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
+	"k8s.io/klog/v2"
 
 	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
 	"google.golang.org/grpc/codes"
@@ -45,19 +45,19 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter, iscsiInfoPath string) (str
 		return "", fmt.Errorf("heuristic determination of mount point failed:%v", err)
 	}
 	if !notMnt {
-		log.Info().Str("mount_path", mntPath).Msg("iSCSI path already mounted")
+		klog.InfoS("iSCSI path already mounted", "mount_path", mntPath)
 		return "", nil
 	}
 
 	if err := os.MkdirAll(mntPath, 0o750); err != nil {
-		log.Error().Err(err).Msg("iSCSI failed to mkdir")
+		klog.ErrorS(err, "iSCSI failed to mkdir")
 		return "", err
 	}
 
 	// Persist iscsi disk config to json file for DetachDisk path
 	err = iscsiLib.PersistConnector(b.connector, iscsiInfoPath)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to persist connection info, disconnecting volume and failing the publish request because persistence files are required for reliable Unpublish")
+		klog.ErrorS(err, "failed to persist connection info, disconnecting volume and failing the publish request because persistence files are required for reliable Unpublish")
 		return "", fmt.Errorf("unable to create persistence file for connection")
 	}
 
@@ -72,8 +72,7 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter, iscsiInfoPath string) (str
 
 	err = b.mounter.FormatAndMount(devicePath, mntPath, b.fsType, options)
 	if err != nil {
-		log.Error().Err(err).Str("devicePath", devicePath).
-			Str("fsType", b.fsType).Str("mntPath", mntPath).Msg("iSCSI failed to mount iSCSI volume")
+		klog.ErrorS(err, "iSCSI failed to mount iSCSI volume", "devicePath", devicePath, "fsType", b.fsType)
 	}
 
 	return devicePath, err
@@ -82,51 +81,50 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter, iscsiInfoPath string) (str
 func (util *ISCSIUtil) DetachDisk(c iscsiDiskUnmounter, targetPath, iscsiInfoPath string) error {
 	_, cnt, err := mount.GetDeviceNameFromMount(c.mounter, targetPath)
 	if err != nil {
-		log.Error().Err(err).Str("targetPath", targetPath).Msg("iSCSI failed to get device from mnt")
+		klog.ErrorS(err, "iSCSI failed to get device from mnt", "targetPath", targetPath)
 		return err
 	}
 	if pathExists, pathErr := mount.PathExists(targetPath); pathErr != nil {
 		return fmt.Errorf("error checking if path exists: %v", pathErr)
 	} else if !pathExists {
-		log.Warn().Str("targetPath", targetPath).Msg("iSCSI Unmount skipped because path does not exist")
+		klog.InfoS("iSCSI Unmount skipped because path does not exist", "targetPath", targetPath)
 		return nil
 	}
 
-	log.Info().Str("iscsiInfoPath", iscsiInfoPath).Msg("Loading iSCSI connection info")
+	klog.V(4).InfoS("loading iSCSI connection info", "iscsiInfoPath", iscsiInfoPath)
 	connector, err := iscsiLib.GetConnectorFromFile(iscsiInfoPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Warn().Err(err).Msg("assuming that ISCSI connection is already closed")
+			klog.ErrorS(err, "assuming that ISCSI connection is already closed, ignoring")
 			return nil
 		}
 		return status.Error(codes.Internal, err.Error())
 	}
 	if err = c.mounter.Unmount(targetPath); err != nil {
-		log.Error().Err(err).Str("targetPath", targetPath).Msg("iSCSI detach disk: failed to unmount")
+		klog.ErrorS(err, "iSCSI detach disk: failed to unmount", "targetPath", targetPath)
 		return err
 	}
 	cnt--
 	if cnt != 0 {
-		log.Error().Int("cnt", cnt).Msg("iSCSI the device is in use")
+		klog.ErrorS(err, "iSCSI device is in use", "cnt", cnt)
 		return nil
 	}
 
-	log.Info().Msg("detaching iSCSI device")
+	klog.Info(err, "detaching iSCSI device")
 	err = connector.DisconnectVolume()
 	if err != nil {
-		log.Error().Err(err).Str("targetPath", targetPath).Msg("iSCSI detach disk: failed to get iscsi config from path")
+		klog.ErrorS(err, "iSCSI detach disk: failed to get iscsi config from path", "targetPath", targetPath)
 		return err
 	}
 
 	iscsiLib.Disconnect(connector.TargetIqn, connector.TargetPortals)
-	if err := os.RemoveAll(targetPath); err != nil {
-		log.Error().Err(err).Msg("iSCSI: failed to remove mount path")
+	if err = os.RemoveAll(targetPath); err != nil {
+		klog.ErrorS(err, "iSCSI: failed to remove mount path")
 	}
-	err = os.Remove(iscsiInfoPath)
-	if err != nil {
+	if err = os.Remove(iscsiInfoPath); err != nil {
 		return err
 	}
 
-	log.Info().Msg("successfully detached ISCSI device")
+	klog.Info(err, "successfully detached ISCSI device")
 	return nil
 }

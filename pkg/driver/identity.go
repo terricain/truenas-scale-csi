@@ -3,18 +3,19 @@ package driver
 import (
 	"context"
 
+	"k8s.io/klog/v2"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func (d *Driver) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	resp := &csi.GetPluginInfoResponse{
 		Name:          d.name,
-		VendorVersion: Version,
+		VendorVersion: driverVersion,
 	}
 
-	log.Info().Interface("response", resp).Str("method", "get_plugin_info").Msg("get plugin info called")
+	klog.V(5).InfoS("[Debug] get plugin info called", "method", "get_plugin_info", "response", resp)
 	return resp, nil
 }
 
@@ -45,12 +46,12 @@ func (d *Driver) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCa
 		},
 	}
 
-	log.Info().Interface("response", resp).Str("method", "get_plugin_capabilities").Msg("get plugin capabitilies called")
+	klog.V(5).InfoS("[Debug] get plugin capabilities called", "method", "get_plugin_capabilities", "response", resp)
 	return resp, nil
 }
 
 func (d *Driver) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	log.Info().Str("method", "get_plugin_info").Msg("probe called")
+	klog.V(5).InfoS("[Debug] probe called", "method", "probe")
 	d.readyMu.Lock()
 	defer d.readyMu.Unlock()
 

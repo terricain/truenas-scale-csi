@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,15 +11,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/rs/zerolog/log"
 	tnclient "github.com/terrycain/truenas-go-sdk"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"k8s.io/klog/v2"
 	mount "k8s.io/mount-utils"
 )
 
@@ -28,10 +30,39 @@ const (
 )
 
 var (
-	GitTreeState = "not a git tree"
-	Commit       string
-	Version      string
+	driverVersion string
+	gitCommit     string
+	buildDate     string
 )
+
+type VersionInfo struct {
+	DriverVersion string `json:"driverVersion"`
+	GitCommit     string `json:"gitCommit"`
+	BuildDate     string `json:"buildDate"`
+	GoVersion     string `json:"goVersion"`
+	Compiler      string `json:"compiler"`
+	Platform      string `json:"platform"`
+}
+
+func GetVersion() VersionInfo {
+	return VersionInfo{
+		DriverVersion: driverVersion,
+		GitCommit:     gitCommit,
+		BuildDate:     buildDate,
+		GoVersion:     runtime.Version(),
+		Compiler:      runtime.Compiler,
+		Platform:      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+	}
+}
+
+func GetVersionJSON() (string, error) {
+	info := GetVersion()
+	marshalled, err := json.MarshalIndent(&info, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(marshalled), nil
+}
 
 type Driver struct {
 	name    string
@@ -143,7 +174,7 @@ func (d *Driver) Run(ctx context.Context) error {
 	errHandler := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		resp, err := handler(ctx, req)
 		if err != nil {
-			log.Error().Err(err).Str("method", info.FullMethod).Msg("method failed")
+			klog.ErrorS(err, "GRPC method failed", "method", info.FullMethod)
 		}
 		return resp, err
 	}
@@ -154,13 +185,13 @@ func (d *Driver) Run(ctx context.Context) error {
 	csi.RegisterNodeServer(d.srv, d)
 
 	d.setReady(true)
-	log.Info().Str("grpc_addr", grpcAddr).Msg("starting CSI GRPC server")
+	klog.V(4).InfoS("starting CSI GRPC server", "grpc_addr", grpcAddr)
 
 	var eg errgroup.Group
 	eg.Go(func() error {
 		go func() {
 			<-ctx.Done()
-			log.Info().Msg("Server stopped")
+			klog.V(4).Info("GRPC server stopped")
 			d.setReady(false)
 			d.srv.GracefulStop()
 		}()

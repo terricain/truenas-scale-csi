@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 
+	"k8s.io/klog/v2"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -19,7 +20,8 @@ const (
 func main() {
 	conn, err := grpc.Dial("unix:///tmp/csi.sock", grpc.WithInsecure())
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to listen to socket")
+		klog.ErrorS(err, "failed to listen to socket")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 	defer conn.Close()
 
@@ -93,11 +95,10 @@ func main() {
 	//}
 
 	// iSCSI
-	resp, err := controllerClient.ListVolumes(context.Background(), &csi.ListVolumesRequest{})
+	_, err = controllerClient.ListVolumes(context.Background(), &csi.ListVolumesRequest{})
 	if err != nil {
-		log.Fatal().Err(err).Msg("")
-	} else {
-		log.Info().Interface("resp", resp).Msg("")
+		klog.ErrorS(err, "caught error listing volumes")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	// NFS

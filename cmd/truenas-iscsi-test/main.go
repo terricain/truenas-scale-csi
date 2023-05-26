@@ -4,7 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/rs/zerolog/log"
+	"k8s.io/klog/v2"
+
 	tnclient "github.com/terrycain/truenas-go-sdk"
 	"golang.org/x/oauth2"
 )
@@ -111,8 +112,9 @@ func main() {
 	// Delete iSCSI Target Extent mapping
 	// resp, err := client.IscsiTargetextentApi.DeleteISCSITargetExtent(ctx, 6).Body(true).Execute()
 
-	log.Info().Interface("resp", resp).Msg("Sent")
+	klog.InfoS("sent", "response", resp)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to send request")
+		klog.ErrorS(err, "failed to send request")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 }
