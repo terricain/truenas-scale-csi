@@ -185,7 +185,7 @@ func (d *Driver) Run(ctx context.Context) error {
 	csi.RegisterNodeServer(d.srv, d)
 
 	d.setReady(true)
-	klog.V(4).InfoS("starting CSI GRPC server", "grpc_addr", grpcAddr)
+	klog.V(4).InfoS("starting CSI GRPC server", "grpcAddress", grpcAddr)
 
 	var eg errgroup.Group
 	eg.Go(func() error {

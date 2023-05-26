@@ -70,7 +70,7 @@ func main() {
 	debugLogging := *logLevel == "debug"
 
 	if *nodeID == "" {
-		klog.Error("Node ID must be specified")
+		klog.Error("--node-id must be specified")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
@@ -113,7 +113,7 @@ func main() {
 	if *controller {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
-		klog.V(5).Info("Initiating controller driver")
+		klog.V(5).Info("initiating controller driver")
 		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
 			klog.ErrorS(err, "failed to init CSI driver")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
@@ -124,7 +124,7 @@ func main() {
 		}
 
 		// Node mode doesnt require qnap access
-		klog.V(5).Info("Initiating node driver")
+		klog.V(5).Info("initiating node driver")
 		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
 			klog.ErrorS(err, "failed to init CSI driver")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)

@@ -15,7 +15,7 @@ func (d *Driver) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoReques
 		VendorVersion: driverVersion,
 	}
 
-	klog.V(5).InfoS("[Debug] get plugin info called", "method", "get_plugin_info", "response", resp)
+	klog.V(5).InfoS("[Debug] get plugin info called", "method", "GetPluginInfo", "response", resp)
 	return resp, nil
 }
 
@@ -46,7 +46,7 @@ func (d *Driver) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCa
 		},
 	}
 
-	klog.V(5).InfoS("[Debug] get plugin capabilities called", "method", "get_plugin_capabilities", "response", resp)
+	klog.V(5).InfoS("[Debug] get plugin capabilities called", "method", "GetPluginCapabilities", "response", resp)
 	return resp, nil
 }
 

@@ -471,7 +471,7 @@ func (d *Driver) iscsiGetCapacity(ctx context.Context, req *csi.GetCapacityReque
 	// TODO(iscsi) refactor this out as is pretty much same as in nfsGetCapacity
 	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.iscsiStoragePath).Execute()
 	if err != nil {
-		klog.ErrorS(err, "failed to get dataset", "dataset_id", d.iscsiStoragePath)
+		klog.ErrorS(err, "failed to get dataset", "datasetID", d.iscsiStoragePath)
 		return nil, status.Errorf(codes.Internal, "Failed to get iSCSI dataset: %s", err.Error())
 	}
 
@@ -554,7 +554,7 @@ func (d *Driver) iscsiListVolumes(ctx context.Context) ([]*csi.ListVolumesRespon
 		volsizeComp := dataset.GetVolsize()
 		quota, err := strconv.ParseInt(volsizeComp.GetRawvalue(), 10, 64)
 		if err != nil {
-			klog.ErrorS(err, "Failed parse volume size to int64", "volsize_composite", volsizeComp)
+			klog.ErrorS(err, "Failed parse volume size to int64", "volumeSizeComposite", volsizeComp)
 			return nil, err
 		}
 
@@ -596,7 +596,7 @@ func (d *Driver) iscsiNodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 
 	libConfigPath := d.getISCSILibConfigPath(req.GetVolumeId())
-	klog.V(5).InfoS("[Debug] generated lib config path", "config_path", libConfigPath)
+	klog.V(5).InfoS("[Debug] generated lib config path", "configPath", libConfigPath)
 	diskMounter := getISCSIDiskMounter(iscsiInfo, req)
 
 	util := &ISCSIUtil{}
@@ -613,7 +613,7 @@ func (d *Driver) iscsiNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	targetPath := req.GetTargetPath()
 
 	libConfigPath := d.getISCSILibConfigPath(req.GetVolumeId())
-	klog.V(5).InfoS("[Debug] generated lib config path", "config_path", libConfigPath)
+	klog.V(5).InfoS("[Debug] generated lib config path", "configPath", libConfigPath)
 	diskUnmounter := getISCSIDiskUnmounter(req)
 
 	iscsiutil := &ISCSIUtil{}
