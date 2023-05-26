@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Get the version
-        id: get_version
-        run: echo name=version::${GITHUB_REF#refs/*/v} >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -38,7 +35,7 @@ jobs:
             org.opencontainers.image.title=TrueNAS Scale CSI Driver
             org.opencontainers.image.description=Supports dynamically provisioning PVs on TrueNAS Scale
           tags: |
-            type=raw,value=${{ steps.get_version.outputs.version }}
+            type=semver,pattern={{version}}
 
       - name: Build and push
         uses: docker/build-push-action@v4
