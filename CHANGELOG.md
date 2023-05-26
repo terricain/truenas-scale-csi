@@ -1,5 +1,10 @@
 # truenas-csi Releases
 
+## 0.4.0 - 26-05-2023
+
+* Removed `-log-level` flag in favour of `-v`.
+* Fixed populating `version`. 
+
 ## 0.3.0 - 26-05-2023
 
 * Swapped out zerolog for klog to be more consistent with other CSI drivers.

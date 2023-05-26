@@ -14,6 +14,7 @@ ARG DOCKER_METADATA_OUTPUT_JSON
 
 # hadolint ignore=DL3018,SC2086,DL4006,SC2155
 RUN apk add --no-cache jq && \
+    export VERSION="$(echo "${DOCKER_METADATA_OUTPUT_JSON}" | jq -r '.labels["org.opencontainers.image.version"]')" && \
     export GIT_COMMIT="$(echo "${DOCKER_METADATA_OUTPUT_JSON}" | jq -r '.labels["org.opencontainers.image.revision"]')" && \
     export BUILD_DATE="$(echo "${DOCKER_METADATA_OUTPUT_JSON}" | jq -r '.labels["org.opencontainers.image.created"]')" && \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \

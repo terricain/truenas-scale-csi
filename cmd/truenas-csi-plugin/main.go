@@ -32,7 +32,6 @@ func main() {
 		endpoint         = fs.String("endpoint", "", "CSI endpoint")
 		truenasURL       = fs.String("url", "", "TrueNAS Scale URL (ends with api/v2.0)")
 		nfsStoragePath   = fs.String("nfs-storage-path", "", "NFS StoragePool/Dataset path")
-		logLevel         = fs.String("log-level", "info", "Log level (info/warn/fatal/error)")
 		version          = fs.Bool("version", false, "Print the version and exit")
 		controller       = fs.Bool("controller", false, "Serve controller driver, else it will operate as node driver")
 		nodeID           = fs.String("node-id", "", "Node ID")
@@ -66,9 +65,6 @@ func main() {
 		fmt.Println(versionInfo)
 		os.Exit(0)
 	}
-
-	debugLogging := *logLevel == "debug"
-
 	if *nodeID == "" {
 		klog.Error("--node-id must be specified")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
@@ -109,23 +105,24 @@ func main() {
 
 	var drv *driver.Driver
 	var err error
+	enableDebugLogging := loggingConfig.Verbosity > 4
 
 	if *controller {
 		accessToken := os.Getenv("TRUENAS_TOKEN")
 
 		klog.V(5).Info("initiating controller driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, accessToken, *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, enableDebugLogging, *ignoreTLS); err != nil {
 			klog.ErrorS(err, "failed to init CSI driver")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	} else {
-		if !isNFS && debugLogging {
+		if !isNFS && enableDebugLogging {
 			iscsiLib.EnableDebugLogging(os.Stdout)
 		}
 
 		// Node mode doesnt require qnap access
 		klog.V(5).Info("initiating node driver")
-		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, debugLogging, *ignoreTLS); err != nil {
+		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, enableDebugLogging, *ignoreTLS); err != nil {
 			klog.ErrorS(err, "failed to init CSI driver")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}

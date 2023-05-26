@@ -47,7 +47,6 @@ metadata:
 
 A vague TODO list of features I hope to implement
 
-* Allow ignoring of TLS certificates (for use with truenas's in lab environments)
 * Increase logging of GRPC requests
 * Volume expansion
 * Volume snapshots
