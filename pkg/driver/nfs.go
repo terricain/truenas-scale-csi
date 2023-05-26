@@ -68,7 +68,7 @@ func nfsCheckCaps(caps []*csi.VolumeCapability) error {
 func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	// Validate NFS capabilities
 	if err := nfsCheckCaps(req.VolumeCapabilities); err != nil {
-		klog.ErrorS(err, "Invalid volume caps")
+		klog.ErrorS(err, "invalid volume capabilities")
 		return nil, err
 	}
 
@@ -93,7 +93,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		return dataset.GetName() == datasetName
 	})
 	if err != nil {
-		klog.ErrorS(err, "Failed to look for existing datasets")
+		klog.ErrorS(err, "failed to look for existing datasets")
 		return nil, status.Errorf(codes.Internal, "failed to look for existing datasets: %v", err)
 	}
 
@@ -299,7 +299,7 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 		quotaComp := dataset.GetRefquota()
 		quota, err := strconv.ParseInt(quotaComp.GetRawvalue(), 10, 64)
 		if err != nil {
-			klog.ErrorS(err, "failed parse quota to int64", "quota_composite", quotaComp)
+			klog.ErrorS(err, "failed parse quota to int64", "datasetQuotaComposite", quotaComp)
 			return nil, err
 		}
 
@@ -359,7 +359,7 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		return &csi.NodePublishVolumeResponse{}, nil
 	}
 
-	klog.V(5).InfoS("[Debug] mounting options", "volume_id", volumeID, "nfs_source", source, "target_path", targetPath, "mount_options", mountOptions)
+	klog.V(5).InfoS("[Debug] mounting options", "volumeID", volumeID, "nfsSource", source, "targetPath", targetPath, "mountOptions", mountOptions)
 	err = d.mounter.Mount(source, targetPath, "nfs", mountOptions)
 	if err != nil {
 		if os.IsPermission(err) {
@@ -371,20 +371,20 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	klog.InfoS("mounting NFS volume success", "volume_id", volumeID, "nfs_source", source, "target_path", targetPath)
+	klog.InfoS("mounting NFS volume success", "volumeID", volumeID, "nfsSource", source, "targetPath", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
 func (d *Driver) nfsNodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) { //nolint:unparam
 	volumeID := req.GetVolumeId()
 	targetPath := req.GetTargetPath()
-	klog.V(5).InfoS("[Debug] unmounting volume", "volume_id", volumeID, "target_path", targetPath)
+	klog.V(5).InfoS("[Debug] unmounting volume", "volumeID", volumeID, "targetPath", targetPath)
 	err := mountutils.CleanupMountPoint(targetPath, d.mounter, true)
 	if err != nil {
-		klog.ErrorS(err, "failed unmounting volume", "volume_id", volumeID, "target_path", targetPath)
+		klog.ErrorS(err, "failed unmounting volume", "volumeID", volumeID, "targetPath", targetPath)
 		return nil, status.Errorf(codes.Internal, "failed to unmount target %q: %v", targetPath, err)
 	}
-	klog.InfoS("unmounting NFS volume success", "volume_id", volumeID)
+	klog.InfoS("unmounting NFS volume success", "volumeID", volumeID)
 
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }

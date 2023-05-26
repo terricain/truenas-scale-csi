@@ -45,7 +45,7 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter, iscsiInfoPath string) (str
 		return "", fmt.Errorf("heuristic determination of mount point failed:%v", err)
 	}
 	if !notMnt {
-		klog.InfoS("iSCSI path already mounted", "mount_path", mntPath)
+		klog.InfoS("iSCSI path already mounted", "mountPath", mntPath)
 		return "", nil
 	}
 
