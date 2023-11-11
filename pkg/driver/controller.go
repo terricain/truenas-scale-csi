@@ -32,11 +32,12 @@ const (
 )
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	if req.Name == "" {
+	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume Name must be provided")
 	}
 
-	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
+	volumeCaps := req.GetVolumeCapabilities()
+	if len(volumeCaps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume Volume capabilities must be provided")
 	}
 
@@ -47,21 +48,22 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	if req.VolumeId == "" {
+	volumeID := req.GetVolumeId()
+	if volumeID == "" {
 		return nil, status.Error(codes.InvalidArgument, "DeleteVolume Volume ID must be provided")
 	}
 
 	switch {
-	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
+	case strings.HasPrefix(volumeID, NFSVolumePrefix):
 		if err := d.nfsDeleteVolume(ctx, req); err != nil {
-			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", req.VolumeId, err.Error())
+			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", volumeID, err.Error())
 		}
-	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+	case strings.HasPrefix(volumeID, ISCSIVolumePrefix):
 		if err := d.iscsiDeleteVolume(ctx, req); err != nil {
-			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", req.VolumeId, err.Error())
+			return nil, status.Errorf(codes.Internal, "Caught error while deleting volume: %s. %s", volumeID, err.Error())
 		}
 	default:
-		return nil, status.Errorf(codes.Unknown, "Unknown volume type: %s", req.VolumeId)
+		return nil, status.Errorf(codes.Unknown, "Unknown volume type: %s", volumeID)
 	}
 
 	return &csi.DeleteVolumeResponse{}, nil

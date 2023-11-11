@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.20.4-alpine3.18 AS build
+FROM --platform=$BUILDPLATFORM golang:1.21.4-alpine3.18 AS build
 
 WORKDIR /usr/local/go/src/truenas-scale-csi
 
@@ -10,7 +10,9 @@ COPY cmd/ /usr/local/go/src/truenas-scale-csi/cmd/
 COPY pkg/ /usr/local/go/src/truenas-scale-csi/pkg/
 
 ENV PKG=github.com/terrycain/truenas-scale-csi
-ARG DOCKER_METADATA_OUTPUT_JSON TARGETOS TARGETARCH
+ARG DOCKER_METADATA_OUTPUT_JSON
+ARG TARGETOS
+ARG TARGETARCH
 
 # hadolint ignore=DL3018,SC2086,DL4006,SC2155
 RUN apk add --no-cache jq && \
@@ -23,8 +25,8 @@ RUN apk add --no-cache jq && \
       cmd/truenas-csi-plugin/main.go
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /iscsiadm cmd/iscsiadm/main.go
 
-FROM alpine:3.18.0 AS release
-RUN apk add --no-cache lsblk=2.38.1-r7 e2fsprogs=1.47.0-r2 xfsprogs=6.2.0-r2 util-linux-misc=2.38.1-r7 nfs-utils=2.6.3-r1 blkid=2.38.1-r7
+FROM alpine:3.18.4 AS release
+RUN apk add --no-cache lsblk=2.38.1-r8 e2fsprogs=1.47.0-r2 xfsprogs=6.2.0-r2 util-linux-misc=2.38.1-r8 nfs-utils=2.6.3-r1 blkid=2.38.1-r8
 # lsblk
 # blkid
 # e2fsprogs -> mkfs.ext3, mkfs.ext4, fsck.ext3, fsck.ext4

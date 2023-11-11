@@ -67,17 +67,17 @@ func nfsCheckCaps(caps []*csi.VolumeCapability) error {
 
 func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	// Validate NFS capabilities
-	if err := nfsCheckCaps(req.VolumeCapabilities); err != nil {
+	if err := nfsCheckCaps(req.GetVolumeCapabilities()); err != nil {
 		klog.ErrorS(err, "invalid volume capabilities")
 		return nil, err
 	}
 
-	volumeID := NFSVolumePrefix + req.Name
+	volumeID := NFSVolumePrefix + req.GetName()
 
 	// Don't care about size for now.
 	// Could iterate though a pool/dataset and check quotas but meh
 	//
-	size, err := extractStorage(req.CapacityRange)
+	size, err := extractStorage(req.GetCapacityRange())
 	klog.V(5).InfoS("[Debug] Raw size requested in bytes", "rawSizeRequestedBytes", size)
 	if err != nil {
 		return nil, status.Errorf(codes.OutOfRange, "invalid capacity range: %v", err)
@@ -130,7 +130,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	if !shareExists {
 		sharingRequest := d.client.SharingApi.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
 			Paths:        []string{datasetMountpoint},
-			Comment:      tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.Name)),
+			Comment:      tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.GetName())),
 			Enabled:      tnclient.PtrBool(true),
 			Ro:           tnclient.PtrBool(false),
 			MaprootGroup: tnclient.PtrString("root"),
@@ -160,12 +160,13 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 }
 
 func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) error {
-	if !strings.HasPrefix(req.VolumeId, NFSVolumePrefix) {
-		return status.Errorf(codes.NotFound, "Volume ID %s not found", req.VolumeId)
+	volumeID := req.GetVolumeId()
+	if !strings.HasPrefix(volumeID, NFSVolumePrefix) {
+		return status.Errorf(codes.NotFound, "Volume ID %s not found", volumeID)
 	}
 
 	// Deleting the dataset will remove the NFS share :)
-	datasetName := strings.Join([]string{d.nfsStoragePath, req.VolumeId}, "/")
+	datasetName := strings.Join([]string{d.nfsStoragePath, volumeID}, "/")
 
 	existingDataset, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
 		return dataset.GetName() == datasetName
@@ -187,16 +188,17 @@ func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReque
 }
 
 func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
-	if !strings.HasPrefix(req.VolumeId, NFSVolumePrefix) {
-		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+	volumeID := req.GetVolumeId()
+	if !strings.HasPrefix(volumeID, NFSVolumePrefix) {
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", volumeID)
 	}
 
-	if err := nfsCheckCaps(req.VolumeCapabilities); err != nil {
+	if err := nfsCheckCaps(req.GetVolumeCapabilities()); err != nil {
 		klog.ErrorS(err, "invalid volume caps")
 		return nil, err
 	}
 
-	datasetName := strings.Join([]string{d.nfsStoragePath, req.VolumeId}, "/")
+	datasetName := strings.Join([]string{d.nfsStoragePath, volumeID}, "/")
 
 	// Validate volume context
 	foundContextKeys := 0 //nolint:ifshort
@@ -222,7 +224,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 	}
 
 	if !datasetExists {
-		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", volumeID)
 	}
 
 	caps := make([]*csi.VolumeCapability, 0)
@@ -234,7 +236,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 
 	return &csi.ValidateVolumeCapabilitiesResponse{
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
-			VolumeContext:      req.VolumeContext,
+			VolumeContext:      req.GetVolumeContext(),
 			VolumeCapabilities: caps,
 		},
 	}, nil

@@ -64,7 +64,7 @@ func iscsiCheckCaps(caps []*csi.VolumeCapability) error {
 
 func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	// Validate iSCSI capabilities
-	if err := iscsiCheckCaps(req.VolumeCapabilities); err != nil {
+	if err := iscsiCheckCaps(req.GetVolumeCapabilities()); err != nil {
 		klog.ErrorS(err, "invalid volume capabilities")
 		return nil, err
 	}
@@ -93,13 +93,13 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	portalListenItem := portalResponse.Listen[0]
 	portalAddr := fmt.Sprintf("%s:%d", portalListenItem.GetIp(), portalListenItem.GetPort())
 
-	volumeID := ISCSIVolumePrefix + req.Name
+	volumeID := ISCSIVolumePrefix + req.GetName()
 
 	// Don't care about size for now.
 	// TODO(iscsi) check for space
 	// Could iterate though a pool/dataset and check quotas but meh
 	//
-	size, err := extractStorage(req.CapacityRange)
+	size, err := extractStorage(req.GetCapacityRange())
 	klog.V(5).InfoS("[Debug] raw size requested in bytes", "size", size)
 	if err != nil {
 		return nil, status.Errorf(codes.OutOfRange, "invalid capacity range: %v", err)
@@ -349,13 +349,14 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 }
 
 func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) error {
-	if !strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix) {
-		return status.Errorf(codes.NotFound, "Volume ID %s not found", req.VolumeId)
+	volumeID := req.GetVolumeId()
+	if !strings.HasPrefix(volumeID, ISCSIVolumePrefix) {
+		return status.Errorf(codes.NotFound, "Volume ID %s not found", volumeID)
 	}
 
 	// Force delete the target first, else delete dataset will spam "device busy"
 	existingTarget, targetExists, err := FindISCSITarget(ctx, d.client, func(target tnclient.ISCSITarget) bool {
-		return target.GetName() == req.GetVolumeId()
+		return target.GetName() == volumeID
 	})
 	if err != nil {
 		klog.ErrorS(err, "failed to look for existing iSCSI targets")
@@ -370,7 +371,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 	}
 
 	// Deleting the dataset will remove ?
-	datasetName := strings.Join([]string{d.iscsiStoragePath, req.VolumeId}, "/")
+	datasetName := strings.Join([]string{d.iscsiStoragePath, volumeID}, "/")
 
 	existingDataset, datasetExists, err := FindDataset(ctx, d.client, func(dataset tnclient.Dataset) bool {
 		return dataset.GetName() == datasetName
@@ -390,7 +391,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 
 	// Deleting the dataset leaves only the initiator
 	existingInitiator, initiatorExists, err := FindISCSIInitiator(ctx, d.client, func(initiator tnclient.ISCSIInitiator) bool {
-		return strings.HasPrefix(initiator.Comment, req.VolumeId)
+		return strings.HasPrefix(initiator.Comment, volumeID)
 	})
 	if err != nil {
 		klog.ErrorS(err, "failed to look for existing iSCSI initiators")
@@ -410,16 +411,17 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 }
 
 func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
-	if !strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix) {
-		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+	volumeID := req.GetVolumeId()
+	if !strings.HasPrefix(volumeID, ISCSIVolumePrefix) {
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", volumeID)
 	}
 
-	if err := iscsiCheckCaps(req.VolumeCapabilities); err != nil {
+	if err := iscsiCheckCaps(req.GetVolumeCapabilities()); err != nil {
 		klog.ErrorS(err, "invalid volume capabilities")
 		return nil, err
 	}
 
-	datasetName := strings.Join([]string{d.iscsiStoragePath, req.VolumeId}, "/")
+	datasetName := strings.Join([]string{d.iscsiStoragePath, volumeID}, "/")
 
 	// Validate volume context
 	foundContextKeys := 0 //nolint:ifshort
@@ -449,7 +451,7 @@ func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.V
 	}
 
 	if !datasetExists {
-		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", req.VolumeId)
+		return nil, status.Errorf(codes.NotFound, "ValidateVolumeCapabilities Volume ID %s not found", volumeID)
 	}
 
 	caps := make([]*csi.VolumeCapability, 0)
@@ -461,7 +463,7 @@ func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.V
 
 	return &csi.ValidateVolumeCapabilitiesResponse{
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
-			VolumeContext:      req.VolumeContext,
+			VolumeContext:      req.GetVolumeContext(),
 			VolumeCapabilities: caps,
 		},
 	}, nil
