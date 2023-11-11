@@ -45,21 +45,21 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 }
 
 func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
-	if len(req.VolumeId) == 0 {
+	if len(req.GetVolumeId()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume ID was empty")
 	}
-	if len(req.VolumePath) == 0 {
+	if len(req.GetVolumePath()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume path was empty")
 	}
 
-	if _, err := os.Lstat(req.VolumePath); err != nil {
+	if _, err := os.Lstat(req.GetVolumePath()); err != nil {
 		if os.IsNotExist(err) {
-			return nil, status.Errorf(codes.NotFound, "path %s does not exist", req.VolumePath)
+			return nil, status.Errorf(codes.NotFound, "path %s does not exist", req.GetVolumePath())
 		}
-		return nil, status.Errorf(codes.Internal, "failed to stat file %s: %v", req.VolumePath, err)
+		return nil, status.Errorf(codes.Internal, "failed to stat file %s: %v", req.GetVolumePath(), err)
 	}
 
-	volumeMetrics, err := volume.NewMetricsStatFS(req.VolumePath).GetMetrics()
+	volumeMetrics, err := volume.NewMetricsStatFS(req.GetVolumePath()).GetMetrics()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get metrics: %v", err)
 	}
@@ -122,9 +122,9 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	}
 
 	switch {
-	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
+	case strings.HasPrefix(req.GetVolumeId(), NFSVolumePrefix):
 		return d.nfsNodePublishVolume(ctx, req)
-	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+	case strings.HasPrefix(req.GetVolumeId(), ISCSIVolumePrefix):
 		return d.iscsiNodePublishVolume(ctx, req)
 	}
 
@@ -141,9 +141,9 @@ func (d *Driver) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 	}
 
 	switch {
-	case strings.HasPrefix(req.VolumeId, NFSVolumePrefix):
+	case strings.HasPrefix(req.GetVolumeId(), NFSVolumePrefix):
 		return d.nfsNodeUnpublishVolume(ctx, req)
-	case strings.HasPrefix(req.VolumeId, ISCSIVolumePrefix):
+	case strings.HasPrefix(req.GetVolumeId(), ISCSIVolumePrefix):
 		return d.iscsiNodeUnpublishVolume(ctx, req)
 	}
 
