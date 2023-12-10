@@ -3,7 +3,7 @@ package driver
 import (
 	"context"
 
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
 )
 
 type (
@@ -14,7 +14,7 @@ type (
 )
 
 func FindISCSIExtent(ctx context.Context, client *tnclient.APIClient, fn ISCSIExtentMatcher) (tnclient.ISCSIExtent, bool, error) {
-	extents, _, err := client.IscsiExtentApi.ListISCSIExtent(ctx).Execute()
+	extents, _, err := client.IscsiExtentAPI.ListISCSIExtent(ctx).Execute()
 	if err != nil {
 		return tnclient.ISCSIExtent{}, false, err
 	}
@@ -29,7 +29,7 @@ func FindISCSIExtent(ctx context.Context, client *tnclient.APIClient, fn ISCSIEx
 }
 
 func FindAllISCSIExtents(ctx context.Context, client *tnclient.APIClient, fn ISCSIExtentMatcher) ([]tnclient.ISCSIExtent, error) {
-	extents, _, err := client.IscsiExtentApi.ListISCSIExtent(ctx).Execute()
+	extents, _, err := client.IscsiExtentAPI.ListISCSIExtent(ctx).Execute()
 	if err != nil {
 		return []tnclient.ISCSIExtent{}, err
 	}
@@ -46,7 +46,7 @@ func FindAllISCSIExtents(ctx context.Context, client *tnclient.APIClient, fn ISC
 }
 
 func FindISCSIInitiator(ctx context.Context, client *tnclient.APIClient, fn ISCSIInitiatorMatcher) (tnclient.ISCSIInitiator, bool, error) {
-	initiators, _, err := client.IscsiInitiatorApi.ListISCSIInitiator(ctx).Execute()
+	initiators, _, err := client.IscsiInitiatorAPI.ListISCSIInitiator(ctx).Execute()
 	if err != nil {
 		return tnclient.ISCSIInitiator{}, false, err
 	}
@@ -61,7 +61,7 @@ func FindISCSIInitiator(ctx context.Context, client *tnclient.APIClient, fn ISCS
 }
 
 func FindISCSITarget(ctx context.Context, client *tnclient.APIClient, fn ISCSITargetMatcher) (tnclient.ISCSITarget, bool, error) {
-	targets, _, err := client.IscsiTargetApi.ListISCSITarget(ctx).Execute()
+	targets, _, err := client.IscsiTargetAPI.ListISCSITarget(ctx).Execute()
 	if err != nil {
 		return tnclient.ISCSITarget{}, false, err
 	}
@@ -76,7 +76,7 @@ func FindISCSITarget(ctx context.Context, client *tnclient.APIClient, fn ISCSITa
 }
 
 func FindAllISCSITargets(ctx context.Context, client *tnclient.APIClient, fn ISCSITargetMatcher) ([]tnclient.ISCSITarget, error) {
-	targets, _, err := client.IscsiTargetApi.ListISCSITarget(ctx).Execute()
+	targets, _, err := client.IscsiTargetAPI.ListISCSITarget(ctx).Execute()
 	if err != nil {
 		return []tnclient.ISCSITarget{}, err
 	}
@@ -93,7 +93,7 @@ func FindAllISCSITargets(ctx context.Context, client *tnclient.APIClient, fn ISC
 }
 
 func FindISCSITargetExtent(ctx context.Context, client *tnclient.APIClient, fn ISCSITargetExtentMatcher) (tnclient.ISCSITargetExtent, bool, error) {
-	targetExtents, _, err := client.IscsiTargetextentApi.ListISCSITargetExtent(ctx).Execute()
+	targetExtents, _, err := client.IscsiTargetextentAPI.ListISCSITargetExtent(ctx).Execute()
 	if err != nil {
 		return tnclient.ISCSITargetExtent{}, false, err
 	}
@@ -108,7 +108,7 @@ func FindISCSITargetExtent(ctx context.Context, client *tnclient.APIClient, fn I
 }
 
 func FindAllISCSITargetExtents(ctx context.Context, client *tnclient.APIClient, fn ISCSITargetExtentMatcher) ([]tnclient.ISCSITargetExtent, error) {
-	targetextents, _, err := client.IscsiTargetextentApi.ListISCSITargetExtent(ctx).Execute()
+	targetextents, _, err := client.IscsiTargetextentAPI.ListISCSITargetExtent(ctx).Execute()
 	if err != nil {
 		return []tnclient.ISCSITargetExtent{}, err
 	}

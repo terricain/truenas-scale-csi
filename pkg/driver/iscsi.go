@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -70,7 +70,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	}
 
 	// Get iSCSI IQN prefix
-	globalConfigResponse, _, err := d.client.IscsiGlobalApi.GetISCSIGlobalConfiguration(ctx).Execute()
+	globalConfigResponse, _, err := d.client.IscsiGlobalAPI.GetISCSIGlobalConfiguration(ctx).Execute()
 	if err != nil {
 		klog.ErrorS(err, "failed to get global iSCSI config")
 		return nil, status.Errorf(codes.Internal, "failed to get global iSCSI config: %v", err)
@@ -78,7 +78,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	iqnBase := globalConfigResponse.Basename
 
 	// Get portal get portal ip and port
-	portalResponse, _, err := d.client.IscsiPortalApi.GetISCSIPortal(ctx, d.portalID).Execute()
+	portalResponse, _, err := d.client.IscsiPortalAPI.GetISCSIPortal(ctx, d.portalID).Execute()
 	if err != nil {
 		klog.ErrorS(err, "failed to get portal", "portalID", d.portalID)
 		return nil, status.Errorf(codes.Internal, "failed to get portal info: %v", err)
@@ -131,7 +131,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 		// Create dataset as a Volume
 		klog.V(5).Info("[Debug] Dataset does not exist, creating")
 
-		datasetRequest := d.client.DatasetApi.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
+		datasetRequest := d.client.DatasetAPI.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
 			Name:         datasetName,
 			Type:         tnclient.PtrString("VOLUME"),
 			Volblocksize: tnclient.PtrString("16K"),
@@ -148,7 +148,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	// Cleanup functions
 	removeDatasetFunc := func() {
 		klog.V(5).Info("[Debug] Cleaning up dataset")
-		_, err = d.client.DatasetApi.DeleteDataset(ctx, datasetID).Execute()
+		_, err = d.client.DatasetAPI.DeleteDataset(ctx, datasetID).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to clean up dataset", "datasetName", datasetName)
 		}
@@ -174,7 +174,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	} else {
 		klog.V(5).Info("[Debug] iSCSI extent does not exist, creating")
 
-		extentRequest := d.client.IscsiExtentApi.CreateISCSIExtent(ctx).CreateISCSIExtentParams(tnclient.CreateISCSIExtentParams{
+		extentRequest := d.client.IscsiExtentAPI.CreateISCSIExtent(ctx).CreateISCSIExtentParams(tnclient.CreateISCSIExtentParams{
 			Name:        volumeID,
 			Rpm:         tnclient.PtrString("SSD"),
 			Type:        "DISK",
@@ -195,7 +195,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	removeExtentFunc := func() {
 		klog.V(5).Info("[Debug] Cleaning up iSCSI Extent")
-		_, err = d.client.IscsiExtentApi.DeleteISCSIExtent(ctx, extentID).DeleteISCSIExtentParams(tnclient.DeleteISCSIExtentParams{
+		_, err = d.client.IscsiExtentAPI.DeleteISCSIExtent(ctx, extentID).DeleteISCSIExtentParams(tnclient.DeleteISCSIExtentParams{
 			Remove: true,
 			Force:  true,
 		}).Execute()
@@ -224,7 +224,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	} else {
 		klog.V(5).Info("[Debug] iSCSI initiator does not exist, creating")
 
-		initiatorRequest := d.client.IscsiInitiatorApi.CreateISCSIInitiator(ctx).CreateISCSIInitiatorParams(tnclient.CreateISCSIInitiatorParams{
+		initiatorRequest := d.client.IscsiInitiatorAPI.CreateISCSIInitiator(ctx).CreateISCSIInitiatorParams(tnclient.CreateISCSIInitiatorParams{
 			Comment: tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI initiator"),
 		})
 		initiatorResponse, _, err2 := initiatorRequest.Execute()
@@ -238,7 +238,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	removeInitiatorFunc := func() {
 		klog.V(5).Info("[Debug] Cleaning up iSCSI Initiator")
-		_, err = d.client.IscsiInitiatorApi.DeleteISCSIInitiator(ctx, initatorID).Execute()
+		_, err = d.client.IscsiInitiatorAPI.DeleteISCSIInitiator(ctx, initatorID).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to cleanup iSCSI Initiator", "iSCSIInitiatorID", initatorID)
 		}
@@ -265,7 +265,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	} else {
 		klog.V(5).Info("[Debug] iSCSI target does not exist, creating")
 
-		targetRequest := d.client.IscsiTargetApi.CreateISCSITarget(ctx).CreateISCSITargetParams(tnclient.CreateISCSITargetParams{
+		targetRequest := d.client.IscsiTargetAPI.CreateISCSITarget(ctx).CreateISCSITargetParams(tnclient.CreateISCSITargetParams{
 			Name:  volumeID,
 			Alias: *tnclient.NewNullableString(tnclient.PtrString(volumeID + ": Kubernetes managed iSCSI initiator")),
 			Mode:  tnclient.PtrString("ISCSI"),
@@ -288,7 +288,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	removeTargetFunc := func() {
 		klog.V(5).Info("[Debug] Cleaning up iSCSI Target")
-		_, err = d.client.IscsiTargetApi.DeleteISCSITarget(ctx, targetID).Body(true).Execute()
+		_, err = d.client.IscsiTargetAPI.DeleteISCSITarget(ctx, targetID).Body(true).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to cleanup iSCSI Target", "iSCSITargetID", targetID)
 		}
@@ -316,7 +316,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 	} else {
 		klog.V(5).Info("[Debug] iSCSI target extent does not exist, creating")
 
-		targetExtentRequest := d.client.IscsiTargetextentApi.CreateISCSITargetExtent(ctx).CreateISCSITargetExtentParams(tnclient.CreateISCSITargetExtentParams{
+		targetExtentRequest := d.client.IscsiTargetextentAPI.CreateISCSITargetExtent(ctx).CreateISCSITargetExtentParams(tnclient.CreateISCSITargetExtentParams{
 			Target: targetID,
 			Extent: extentID,
 		})
@@ -363,7 +363,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 		return err
 	}
 	if targetExists {
-		_, err = d.client.IscsiTargetApi.DeleteISCSITarget(ctx, existingTarget.GetId()).Body(true).Execute()
+		_, err = d.client.IscsiTargetAPI.DeleteISCSITarget(ctx, existingTarget.GetId()).Body(true).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to delete iSCSI Target", "iscsi_target_id", existingTarget.GetId())
 			return err
@@ -382,7 +382,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 	}
 
 	if datasetExists {
-		_, err = d.client.DatasetApi.DeleteDataset(ctx, existingDataset.GetId()).Execute()
+		_, err = d.client.DatasetAPI.DeleteDataset(ctx, existingDataset.GetId()).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to delete Dataset", "dataset_id", existingDataset.GetId())
 			return err
@@ -400,7 +400,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 
 	if initiatorExists {
 		klog.V(5).InfoS("[Debug] cleaning up iSCSI Initiator", "iSCSIInitiatorID", existingInitiator.Id)
-		_, err = d.client.IscsiInitiatorApi.DeleteISCSIInitiator(ctx, existingInitiator.Id).Execute()
+		_, err = d.client.IscsiInitiatorAPI.DeleteISCSIInitiator(ctx, existingInitiator.Id).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to cleanup iSCSI Initiator", "iSCSIInitiatorID", existingInitiator.Id)
 			return err
@@ -471,7 +471,7 @@ func (d *Driver) iscsiValidateVolumeCapabilities(ctx context.Context, req *csi.V
 
 func (d *Driver) iscsiGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) { //nolint:unparam
 	// TODO(iscsi) refactor this out as is pretty much same as in nfsGetCapacity
-	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.iscsiStoragePath).Execute()
+	resp, _, err := d.client.DatasetAPI.GetDataset(ctx, d.iscsiStoragePath).Execute()
 	if err != nil {
 		klog.ErrorS(err, "failed to get dataset", "datasetID", d.iscsiStoragePath)
 		return nil, status.Errorf(codes.Internal, "Failed to get iSCSI dataset: %s", err.Error())

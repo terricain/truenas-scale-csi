@@ -16,7 +16,7 @@ import (
 	"sync"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"

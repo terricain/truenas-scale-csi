@@ -3,7 +3,7 @@ package driver
 import (
 	"context"
 
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
 )
 
 type (
@@ -12,7 +12,7 @@ type (
 )
 
 func FindDataset(ctx context.Context, client *tnclient.APIClient, fn DatasetMatcher) (tnclient.Dataset, bool, error) {
-	datasets, _, err := client.DatasetApi.ListDatasets(ctx).Execute()
+	datasets, _, err := client.DatasetAPI.ListDatasets(ctx).Execute()
 	if err != nil {
 		return tnclient.Dataset{}, false, err
 	}
@@ -27,7 +27,7 @@ func FindDataset(ctx context.Context, client *tnclient.APIClient, fn DatasetMatc
 }
 
 func FindAllDatasets(ctx context.Context, client *tnclient.APIClient, fn DatasetMatcher) ([]tnclient.Dataset, error) {
-	datasets, _, err := client.DatasetApi.ListDatasets(ctx).Execute()
+	datasets, _, err := client.DatasetAPI.ListDatasets(ctx).Execute()
 	if err != nil {
 		return []tnclient.Dataset{}, err
 	}
@@ -45,7 +45,7 @@ func FindAllDatasets(ctx context.Context, client *tnclient.APIClient, fn Dataset
 }
 
 func FindNFSShare(ctx context.Context, client *tnclient.APIClient, fn NFSShareMatcher) (tnclient.ShareNFS, bool, error) {
-	shares, _, err := client.SharingApi.ListSharesNFS(ctx).Execute()
+	shares, _, err := client.SharingAPI.ListSharesNFS(ctx).Execute()
 	if err != nil {
 		return tnclient.ShareNFS{}, false, err
 	}
@@ -60,7 +60,7 @@ func FindNFSShare(ctx context.Context, client *tnclient.APIClient, fn NFSShareMa
 }
 
 func FindAllNFSShares(ctx context.Context, client *tnclient.APIClient, fn NFSShareMatcher) ([]tnclient.ShareNFS, error) {
-	shares, _, err := client.SharingApi.ListSharesNFS(ctx).Execute()
+	shares, _, err := client.SharingAPI.ListSharesNFS(ctx).Execute()
 	if err != nil {
 		return []tnclient.ShareNFS{}, err
 	}
@@ -75,4 +75,20 @@ func FindAllNFSShares(ctx context.Context, client *tnclient.APIClient, fn NFSSha
 	}
 
 	return result, nil
+}
+
+// NormaliseNFSShareMountpaths Returns a string of the first or only NFS path, empty if none
+// this hides an issues where TrueNAS Scale broke an API without bumping an API version
+// by moving from paths to path.
+func NormaliseNFSShareMountpaths(share tnclient.ShareNFS) string {
+	path := share.GetPath()
+	if len(path) > 0 {
+		return path
+	}
+
+	paths := share.GetPaths()
+	if len(paths) > 0 {
+		return paths[0]
+	}
+	return ""
 }

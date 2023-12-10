@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -103,7 +103,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	} else {
 		klog.V(5).Info("[Debug] Dataset does not exist, creating")
 
-		datasetRequest := d.client.DatasetApi.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
+		datasetRequest := d.client.DatasetAPI.CreateDataset(ctx).CreateDatasetParams(tnclient.CreateDatasetParams{
 			Name:              datasetName,
 			Casesensitivity:   tnclient.PtrString("SENSITIVE"),
 			Copies:            tnclient.PtrInt32(1),
@@ -120,7 +120,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	}
 
 	_, shareExists, err := FindNFSShare(ctx, d.client, func(share tnclient.ShareNFS) bool {
-		return len(share.GetPaths()) == 1 && share.GetPaths()[0] == datasetMountpoint
+		return NormaliseNFSShareMountpaths(share) == datasetMountpoint
 	})
 	if err != nil {
 		klog.ErrorS(err, "failed to look for existing NFS shares")
@@ -128,8 +128,9 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 	}
 
 	if !shareExists {
-		sharingRequest := d.client.SharingApi.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
+		sharingRequest := d.client.SharingAPI.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
 			Paths:        []string{datasetMountpoint},
+			Path:         datasetMountpoint,
 			Comment:      tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.GetName())),
 			Enabled:      tnclient.PtrBool(true),
 			Ro:           tnclient.PtrBool(false),
@@ -177,7 +178,7 @@ func (d *Driver) nfsDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReque
 	}
 
 	if datasetExists {
-		_, err = d.client.DatasetApi.DeleteDataset(ctx, existingDataset.GetId()).Execute()
+		_, err = d.client.DatasetAPI.DeleteDataset(ctx, existingDataset.GetId()).Execute()
 		if err != nil {
 			klog.ErrorS(err, "failed to delete Dataset", "datasetID", existingDataset.GetId())
 			return err
@@ -243,7 +244,7 @@ func (d *Driver) nfsValidateVolumeCapabilities(ctx context.Context, req *csi.Val
 }
 
 func (d *Driver) nfsGetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) { //nolint:unparam
-	resp, _, err := d.client.DatasetApi.GetDataset(ctx, d.nfsStoragePath).Execute()
+	resp, _, err := d.client.DatasetAPI.GetDataset(ctx, d.nfsStoragePath).Execute()
 	if err != nil {
 		klog.ErrorS(err, "failed to get dataset", "datasetID", d.nfsStoragePath)
 		return nil, status.Errorf(codes.Internal, "Failed to get NFS dataset: %s", err.Error())
@@ -280,10 +281,11 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 	}
 
 	shares, err := FindAllNFSShares(ctx, d.client, func(share tnclient.ShareNFS) bool {
-		if len(share.GetPaths()) != 1 {
+		path := NormaliseNFSShareMountpaths(share)
+		if len(path) == 0 {
 			return false
 		}
-		_, exists := mountpointDataset[share.GetPaths()[0]]
+		_, exists := mountpointDataset[path]
 
 		return exists
 	})
@@ -295,7 +297,8 @@ func (d *Driver) nfsListVolumes(ctx context.Context) ([]*csi.ListVolumesResponse
 	result := make([]*csi.ListVolumesResponse_Entry, 0)
 
 	for _, share := range shares {
-		dataset := mountpointDataset[share.GetPaths()[0]] // we know this exists by this point
+		path := NormaliseNFSShareMountpaths(share)
+		dataset := mountpointDataset[path] // we know this exists by this point
 		volumeID := strings.TrimPrefix(dataset.GetName(), nfsStoragePrefix)
 
 		quotaComp := dataset.GetRefquota()

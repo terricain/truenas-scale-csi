@@ -1,12 +1,12 @@
 module github.com/terrycain/truenas-scale-csi
 
-go 1.21
+go 1.21.4
 
 require (
 	github.com/container-storage-interface/spec v1.8.0
 	github.com/kubernetes-csi/csi-lib-iscsi v0.0.0-20220106022228-366f3190694e
 	github.com/spf13/pflag v1.0.5
-	github.com/terrycain/truenas-go-sdk v0.0.0-20220711232922-263cbeb05e44
+	github.com/terrycain/truenas-go-sdk v0.0.0-20231210135854-9320316561de
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.51.0
