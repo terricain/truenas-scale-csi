@@ -3,6 +3,11 @@
 This is a work-in-progress Kubernetes CSI driver which lets you automatically provision
 NFS and eventually iSCSI volumes hosted on a TrueNAS Scale box.
 
+**Breaking change** TrueNAS-22.12.4.2 and later contain a breaking change in the API, whereby creating and listing NFS 
+shares now returns a mountpoint `path` string instead of `paths` which was a list of strings. Normally this wouldn't be
+an issue, but it seems the API version of 2.0 hasn't been bumped so some patches have been put in place to account for
+this. If you're experiencing issues with NFS dynamic PVs then update to chart version 0.5.0.
+
 ## How to install
 
 The main Helm values you'll need to install the NFS driver would be:
