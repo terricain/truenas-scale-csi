@@ -6,7 +6,7 @@ require (
 	github.com/container-storage-interface/spec v1.8.0
 	github.com/kubernetes-csi/csi-lib-iscsi v0.0.0-20220106022228-366f3190694e
 	github.com/spf13/pflag v1.0.5
-	github.com/terrycain/truenas-go-sdk v0.0.0-20231210135854-9320316561de
+	github.com/terrycain/truenas-go-sdk v0.0.0-20231211135800-6c9064d59cc5
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.51.0
