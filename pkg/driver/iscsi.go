@@ -210,7 +210,7 @@ func (d *Driver) iscsiCreateVolume(ctx context.Context, req *csi.CreateVolumeReq
 
 	// Create iSCSI initiator
 	existingInitiator, initiatorExists, err := FindISCSIInitiator(ctx, d.client, func(initiator tnclient.ISCSIInitiator) bool {
-		return strings.HasPrefix(initiator.Comment, volumeID)
+		return strings.HasPrefix(initiator.GetComment(), volumeID)
 	})
 	if err != nil {
 		cleanupFunc()
@@ -391,7 +391,7 @@ func (d *Driver) iscsiDeleteVolume(ctx context.Context, req *csi.DeleteVolumeReq
 
 	// Deleting the dataset leaves only the initiator
 	existingInitiator, initiatorExists, err := FindISCSIInitiator(ctx, d.client, func(initiator tnclient.ISCSIInitiator) bool {
-		return strings.HasPrefix(initiator.Comment, volumeID)
+		return strings.HasPrefix(initiator.GetComment(), volumeID)
 	})
 	if err != nil {
 		klog.ErrorS(err, "failed to look for existing iSCSI initiators")

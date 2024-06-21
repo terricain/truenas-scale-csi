@@ -1,5 +1,9 @@
 # truenas-csi Releases
 
+## 1.0.0 - 21-06-2024
+
+* Package rename & updates
+
 ## 0.4.0 - 26-05-2023
 
 * Removed `-log-level` flag in favour of `-v`.

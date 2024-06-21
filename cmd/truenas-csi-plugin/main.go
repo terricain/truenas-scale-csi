@@ -10,8 +10,6 @@ import (
 	flag "github.com/spf13/pflag"
 	"k8s.io/component-base/featuregate"
 
-	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
-
 	"github.com/terricain/truenas-scale-csi/pkg/driver"
 
 	logsapi "k8s.io/component-base/logs/api/v1"
@@ -116,10 +114,6 @@ func main() {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 	} else {
-		if !isNFS && enableDebugLogging {
-			iscsiLib.EnableDebugLogging(os.Stdout)
-		}
-
 		// Node mode doesnt require qnap access
 		klog.V(5).Info("initiating node driver")
 		if drv, err = driver.NewDriver(*endpoint, *truenasURL, "", *nfsStoragePath, *iscsiStoragePath, portalID32, *controller, *nodeID, isNFS, enableDebugLogging, *ignoreTLS); err != nil {

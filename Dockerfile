@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.21.4-alpine3.18 AS build
+FROM --platform=$BUILDPLATFORM golang:1.22.4-alpine3.20 AS build
 
 WORKDIR /usr/local/go/src/truenas-scale-csi
 
@@ -25,8 +25,8 @@ RUN apk add --no-cache jq && \
       cmd/truenas-csi-plugin/main.go
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /iscsiadm cmd/iscsiadm/main.go
 
-FROM alpine:3.18.4 AS release
-RUN apk add --no-cache lsblk=2.38.1-r8 e2fsprogs=1.47.0-r2 xfsprogs=6.2.0-r2 util-linux-misc=2.38.1-r8 nfs-utils=2.6.3-r1 blkid=2.38.1-r8
+FROM alpine:3.20 AS release
+RUN apk add --no-cache lsblk=2.40.1-r1 e2fsprogs=1.47.0-r5 xfsprogs=6.8.0-r0 util-linux-misc=2.40.1-r1 nfs-utils=2.6.4-r1 blkid=2.40.1-r1
 # lsblk
 # blkid
 # e2fsprogs -> mkfs.ext3, mkfs.ext4, fsck.ext3, fsck.ext4

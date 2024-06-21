@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/rs/zerolog/log"
 	"k8s.io/klog/v2"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -85,14 +86,14 @@ func main() {
 	//}
 
 	// iSCSI
-	//resp2, err := controllerClient.DeleteVolume(context.Background(), &csi.DeleteVolumeRequest{
-	//	VolumeId: "iscsi-testvol1",
-	//})
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("")
-	//} else {
-	//	log.Info().Interface("resp", resp2).Msg("")
-	//}
+	resp2, err := controllerClient.DeleteVolume(context.Background(), &csi.DeleteVolumeRequest{
+		VolumeId: "iscsi-testvol1",
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
+	} else {
+		log.Info().Interface("resp", resp2).Msg("")
+	}
 
 	// iSCSI
 	_, err = controllerClient.ListVolumes(context.Background(), &csi.ListVolumesRequest{})

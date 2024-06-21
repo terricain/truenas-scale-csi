@@ -5,8 +5,6 @@ metadata:
   name: {{ include "truenas-scale-csi.nodeDaemonsetName" . }}
   labels:
     {{- include "truenas-scale-csi.labels" . | nindent 4 }}
-  annotations:
-    kubectl.kubernetes.io/default-container: node-server
 spec:
   selector:
     matchLabels:
@@ -15,8 +13,9 @@ spec:
     metadata:
       labels:
         {{- include "truenas-scale-csi.nodeSelectorLabels" . | nindent 8 }}
-      {{- with .Values.node.podAnnotations }}
       annotations:
+        kubectl.kubernetes.io/default-container: node-server
+      {{- with .Values.node.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
@@ -33,7 +32,7 @@ spec:
         {{- toYaml .Values.node.podSecurityContext | nindent 8 }}
       containers:
         - name: liveness-probe
-          image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0
+          image: registry.k8s.io/sig-storage/livenessprobe:v2.12.0
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
@@ -55,7 +54,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: node-driver-registrar
-          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.0
           args:
             - --v=2
             - --csi-address=/csi/csi.sock
@@ -129,6 +128,8 @@ spec:
             - name: iscsi-csi-run-dir
               mountPath: /var/run/iscsi.truenas-scale.terricain.github.com
             {{- end }}
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: socket-dir
           hostPath:
@@ -149,6 +150,8 @@ spec:
           hostPath:
             path: /
             type: Directory
+        - name: tmp
+          emptyDir: {}
         {{- if eq .Values.settings.type "iscsi" }}
         - name: iscsi-csi-run-dir
           hostPath:
