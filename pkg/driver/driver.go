@@ -15,18 +15,19 @@ import (
 	"strings"
 	"sync"
 
+	"k8s.io/klog/v2"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
+	tnclient "github.com/terricain/truenas-go-sdk/pkg/truenas"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"k8s.io/klog/v2"
 	mount "k8s.io/mount-utils"
 )
 
 const (
-	NFSDriverName   = "nfs.truenas-scale.terrycain.github.com"
-	ISCSIDriverName = "iscsi.truenas-scale.terrycain.github.com"
+	NFSDriverName   = "nfs.truenas-scale.terricain.github.com"
+	ISCSIDriverName = "iscsi.truenas-scale.terricain.github.com"
 )
 
 var (

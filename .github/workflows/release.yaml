@@ -29,7 +29,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/terrycain/truenas-scale-csi
+          images: ghcr.io/terricain/truenas-scale-csi
           labels: |
             org.opencontainers.image.authors=Terry Cain
             org.opencontainers.image.title=TrueNAS Scale CSI Driver

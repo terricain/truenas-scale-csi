@@ -37,7 +37,7 @@ storageClass:
 
 # ---
 image:
-  repository: ghcr.io/terrycain/truenas-scale-csi
+  repository: ghcr.io/terricain/truenas-scale-csi
   pullPolicy: IfNotPresent
   tag: ""
 
@@ -108,5 +108,5 @@ node:
       add: [ "SYS_ADMIN" ]
   resources: {}
 
-nfsCSIDriverName: "nfs.truenas-scale.terrycain.github.com"
-iscsiCSIDriverName: "iscsi.truenas-scale.terrycain.github.com"
+nfsCSIDriverName: "nfs.truenas-scale.terricain.github.com"
+iscsiCSIDriverName: "iscsi.truenas-scale.terricain.github.com"

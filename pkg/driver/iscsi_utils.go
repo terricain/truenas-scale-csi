@@ -3,7 +3,7 @@ package driver
 import (
 	"context"
 
-	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
+	tnclient "github.com/terricain/truenas-go-sdk/pkg/truenas"
 )
 
 type (

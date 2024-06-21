@@ -9,7 +9,7 @@ version: "0.5.0"
 # Version of the container
 appVersion: "0.6.0"
 
-home: https://github.com/terrycain/truenas-scale-csi
+home: https://github.com/terricain/truenas-scale-csi
 
 keywords:
   - csi
@@ -17,8 +17,8 @@ keywords:
   - iscsi
   - truenas
 sources:
-  - https://github.com/terrycain/truenas-scale-csi
+  - https://github.com/terricain/truenas-scale-csi
 maintainers:
-  - name: terrycain
+  - name: terricain
 engine: gotpl
 kubeVersion: ">=1.20.0-0"

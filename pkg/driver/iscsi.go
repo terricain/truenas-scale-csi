@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
+	tnclient "github.com/terricain/truenas-go-sdk/pkg/truenas"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"

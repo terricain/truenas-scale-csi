@@ -25,7 +25,7 @@ Checkout the chart [values.yaml](./charts/truenas-scale-csi/values.yaml) for an 
 
 To install the Helm chart: (this assumes you've cloned the repo as the chart isnt hosted yet)
 ```shell
-helm repo add truenas-scale-csi https://terrycain.github.io/truenas-scale-csi/
+helm repo add truenas-scale-csi https://terricain.github.io/truenas-scale-csi/
 helm install -n kube-system -f custom-values.yaml nfs truenas-scale-csi/truenas-scale-csi
 helm install -n kube-system -f custom-values.yaml iscsi truenas-scale-csi/truenas-scale-csi
 ```

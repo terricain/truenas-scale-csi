@@ -4,9 +4,7 @@ import (
 	"context"
 	"os"
 
-	"k8s.io/klog/v2"
-
-	tnclient "github.com/terrycain/truenas-go-sdk"
+	tnclient "github.com/terricain/truenas-go-sdk/pkg/truenas"
 	"golang.org/x/oauth2"
 )
 

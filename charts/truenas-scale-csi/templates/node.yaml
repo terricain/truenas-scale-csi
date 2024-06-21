@@ -127,7 +127,7 @@ spec:
               mountPropagation: "HostToContainer"
             {{- if eq .Values.settings.type "iscsi" }}
             - name: iscsi-csi-run-dir
-              mountPath: /var/run/iscsi.truenas-scale.terrycain.github.com
+              mountPath: /var/run/iscsi.truenas-scale.terricain.github.com
             {{- end }}
       volumes:
         - name: socket-dir
@@ -152,5 +152,5 @@ spec:
         {{- if eq .Values.settings.type "iscsi" }}
         - name: iscsi-csi-run-dir
           hostPath:
-            path: /var/run/iscsi.truenas-scale.terrycain.github.com
+            path: /var/run/iscsi.truenas-scale.terricain.github.com
         {{- end }}

@@ -9,7 +9,7 @@ RUN go mod download
 COPY cmd/ /usr/local/go/src/truenas-scale-csi/cmd/
 COPY pkg/ /usr/local/go/src/truenas-scale-csi/pkg/
 
-ENV PKG=github.com/terrycain/truenas-scale-csi
+ENV PKG=github.com/terricain/truenas-scale-csi
 ARG DOCKER_METADATA_OUTPUT_JSON
 ARG TARGETOS
 ARG TARGETARCH

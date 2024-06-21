@@ -12,7 +12,7 @@ import (
 
 	iscsiLib "github.com/kubernetes-csi/csi-lib-iscsi/iscsi"
 
-	"github.com/terrycain/truenas-scale-csi/pkg/driver"
+	"github.com/terricain/truenas-scale-csi/pkg/driver"
 
 	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/logs/json"

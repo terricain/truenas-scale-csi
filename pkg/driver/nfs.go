@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	tnclient "github.com/terrycain/truenas-go-sdk/pkg/truenas"
+	tnclient "github.com/terricain/truenas-go-sdk/pkg/truenas"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -140,7 +140,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 		_, _, err = sharingRequest.Execute()
 
 		// TODO Remove on next major version
-		// Fall back to older API (no api versioning, see https://github.com/terrycain/truenas-scale-csi/pull/4)
+		// Fall back to older API (no api versioning, see https://github.com/terricain/truenas-scale-csi/pull/4)
 		if strings.Contains(err.Error(), "422 Unprocessable Entity") {
 			sharingRequest = d.client.SharingAPI.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
 				Paths:        []string{datasetMountpoint},
