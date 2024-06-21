@@ -17,11 +17,11 @@ jobs:
       - uses: alexellis/arkade-get@master
         with:
           kubeconform: latest
-          helm: "v3.12.0"
+          helm: "v3.15.2"
       - name: Validate Helm chart
         run: |
             set -eo pipefail
-            helm template ./charts/truenas-scale-csi | kubeconform --kubernetes-version 1.26.0 -output tap
+            helm template ./charts/truenas-scale-csi | kubeconform --kubernetes-version 1.27.0 -output tap
 
   release:
     needs: helm-lint
@@ -42,7 +42,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
-          version: "v3.12.0"
+          version: "v3.15.2"
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
