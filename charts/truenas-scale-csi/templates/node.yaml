@@ -115,7 +115,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: DRIVER_NAME
-              value: {{ include "truenas-scale-csi.csiDriverName" . | quote -}}
+              value: {{ include "truenas-scale-csi.csiDriverName" . | quote }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi

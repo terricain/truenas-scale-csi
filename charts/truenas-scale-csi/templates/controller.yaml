@@ -50,6 +50,7 @@ spec:
             {{- if .Values.settings.ignoreTLS }}
             - "--ignore-tls"
             {{- end }}
+            - "--driver-name=$(DRIVER_NAME)"
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
@@ -77,6 +78,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              value: {{ include "truenas-scale-csi.csiDriverName" . | quote }}
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
