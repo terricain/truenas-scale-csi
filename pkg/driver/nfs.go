@@ -141,7 +141,7 @@ func (d *Driver) nfsCreateVolume(ctx context.Context, req *csi.CreateVolumeReque
 
 		// TODO Remove on next major version
 		// Fall back to older API (no api versioning, see https://github.com/terricain/truenas-scale-csi/pull/4)
-		if strings.Contains(err.Error(), "422 Unprocessable Entity") {
+		if err != nil && strings.Contains(err.Error(), "422 Unprocessable Entity") {
 			sharingRequest = d.client.SharingAPI.CreateShareNFS(ctx).CreateShareNFSParams(tnclient.CreateShareNFSParams{
 				Paths:        []string{datasetMountpoint},
 				Comment:      tnclient.PtrString(fmt.Sprintf("Share for Kubernetes PV %s", req.GetName())),
