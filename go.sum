@@ -123,8 +123,6 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/terricain/truenas-go-sdk v0.0.0-20240621184913-74779b913086 h1:56AFF0O2mp1eb+x6loL51HMGM1E1DmZeI6At7Vr0vsM=
-github.com/terricain/truenas-go-sdk v0.0.0-20240621184913-74779b913086/go.mod h1:IoiOJoEqWQw2CArBZyRaB3W8xjGS2s/vlOgpXV9eTvs=
 github.com/terricain/truenas-go-sdk v0.0.0-20240621205415-30685cb4fa79 h1:nlwfyaA+orJFA6POReQZr4uzuFUDI8+TUsL4dEQUQlc=
 github.com/terricain/truenas-go-sdk v0.0.0-20240621205415-30685cb4fa79/go.mod h1:IoiOJoEqWQw2CArBZyRaB3W8xjGS2s/vlOgpXV9eTvs=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
