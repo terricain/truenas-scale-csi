@@ -87,7 +87,7 @@ type Driver struct {
 	ready   bool
 }
 
-func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS, debugLogging bool, ignoreTLS bool) (*Driver, error) {
+func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath string, portalID int32, isController bool, nodeID string, isNFS, debugLogging bool, ignoreTLS bool, driverName string) (*Driver, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse address: %w", err)
@@ -111,11 +111,6 @@ func NewDriver(endpoint, baseURL, accessToken, nfsStoragePath, iscsiStoragePath 
 	config.Debug = debugLogging
 	config.HTTPClient = tc
 	client := tnclient.NewAPIClient(config)
-
-	driverName := NFSDriverName
-	if !isNFS {
-		driverName = ISCSIDriverName
-	}
 
 	return &Driver{
 		name:             driverName,

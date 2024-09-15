@@ -91,6 +91,7 @@ spec:
             - "--node-id=$(NODE_ID)"
             - "-v={{ .Values.settings.verbosity }}"
             - "--type=$(CSI_TYPE)"
+            - "--driver-name=$(DRIVER_NAME)"
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
@@ -113,6 +114,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              value: {{ include "truenas-scale-csi.csiDriverName" . | quote }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -126,7 +129,7 @@ spec:
               mountPropagation: "HostToContainer"
             {{- if eq .Values.settings.type "iscsi" }}
             - name: iscsi-csi-run-dir
-              mountPath: /var/run/iscsi.truenas-scale.terricain.github.com
+              mountPath: /var/run/{{ include "truenas-scale-csi.csiDriverName" . -}}
             {{- end }}
             - name: tmp
               mountPath: /tmp
@@ -155,5 +158,5 @@ spec:
         {{- if eq .Values.settings.type "iscsi" }}
         - name: iscsi-csi-run-dir
           hostPath:
-            path: /var/run/iscsi.truenas-scale.terricain.github.com
+            path: /var/run/{{ include "truenas-scale-csi.csiDriverName" . -}}
         {{- end }}
