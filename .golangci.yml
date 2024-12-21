@@ -13,6 +13,10 @@ output:
   format: colored-line-number
   sort-results: true
 
+issues:
+  exclude:
+    - "printf: non-constant format string in call to google.golang.org/grpc/status.Errorf"
+
 
 linters-settings:
 

@@ -1,5 +1,13 @@
 # truenas-csi Releases
 
+## 1.1.1 - 15-09-2024
+
+* Fixed nil pointer dereference when creating NFS volumes.
+
+## 1.1.0 - ?
+
+* Fixed CSI driver name issues.
+
 ## 1.0.0 - 21-06-2024
 
 * Package rename & updates

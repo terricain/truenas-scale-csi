@@ -17,8 +17,8 @@ func main() {
 	config.Servers = tnclient.ServerConfigurations{{URL: url}}
 	config.Debug = true
 	config.HTTPClient = tc
-	client := tnclient.NewAPIClient(config)
-	ctx := context.Background()
+	// client := tnclient.NewAPIClient(config)
+	// ctx := context.Background()
 
 	// Get global configuration
 	// resp, _, err := client.IscsiGlobalApi.GetISCSIGlobalConfiguration(ctx).Execute()
@@ -27,7 +27,7 @@ func main() {
 	// resp, _, err := client.IscsiPortalApi.ListISCSIPortal(ctx).Execute()
 
 	// Get portal
-	resp, _, err := client.IscsiPortalApi.GetISCSIPortal(ctx, 1).Execute()
+	// resp, _, err := client.IscsiPortalApi.GetISCSIPortal(ctx, 1).Execute()
 
 	// Create iSCSI Extent
 	//param := tnclient.CreateISCSIExtentParams{
@@ -110,9 +110,9 @@ func main() {
 	// Delete iSCSI Target Extent mapping
 	// resp, err := client.IscsiTargetextentApi.DeleteISCSITargetExtent(ctx, 6).Body(true).Execute()
 
-	klog.InfoS("sent", "response", resp)
-	if err != nil {
-		klog.ErrorS(err, "failed to send request")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
+	//klog.InfoS("sent", "response", resp)
+	//if err != nil {
+	//	klog.ErrorS(err, "failed to send request")
+	//	klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	//}
 }
