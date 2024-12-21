@@ -39,16 +39,8 @@ func extractStorage(capRange *csi.CapacityRange) (int64, error) {
 		return 0, fmt.Errorf("limit (%v) must be a multiple of 1GB", limitBytes)
 	}
 
-	if requiredSet && requiredBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not exceed maximum supported volume size (%v)", formatBytes(requiredBytes), formatBytes(maximumVolumeSizeInBytes))
-	}
-
 	if requiredSet && requiredBytes%(1*giB) != 0 {
 		return 0, fmt.Errorf("required (%v) must be a multiple of 1GB", requiredBytes)
-	}
-
-	if !requiredSet && limitSet && limitBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not exceed maximum supported volume size (%v)", formatBytes(limitBytes), formatBytes(maximumVolumeSizeInBytes))
 	}
 
 	if requiredSet && limitSet && requiredBytes == limitBytes {

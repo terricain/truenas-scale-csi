@@ -22,10 +22,6 @@ const (
 	// to create a volume that is smaller than what we support.
 	minimumVolumeSizeInBytes int64 = 1 * giB
 
-	// MaximumVolumeSizeInBytes is used to validate that the user is not trying
-	// to create a volume that is larger than what we support.
-	maximumVolumeSizeInBytes int64 = 128 * giB
-
 	// DefaultVolumeSizeInBytes is used when the user did not provide a size or
 	// the size they provided did not satisfy our requirements.
 	defaultVolumeSizeInBytes int64 = 16 * giB
