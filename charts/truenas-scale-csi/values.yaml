@@ -107,6 +107,7 @@ node:
     capabilities:
       add: [ "SYS_ADMIN" ]
   resources: {}
+  nfsNoLock: false # Set to true if you want to run NFS without locking, not recommended.
 
 nfsCSIDriverName: "nfs.truenas-scale.terricain.github.com"
 iscsiCSIDriverName: "iscsi.truenas-scale.terricain.github.com"

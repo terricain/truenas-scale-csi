@@ -344,6 +344,11 @@ func (d *Driver) nfsNodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		mountOptions = append(mountOptions, "ro")
 	}
 
+	// Conditionally allow nolock if specified by environment variable
+	if os.Getenv("NFS_NOLOCK") == "true" {
+		mountOptions = append(mountOptions, "nolock")
+	}
+
 	var server, baseDir string
 	for k, v := range req.GetVolumeContext() {
 		switch k {

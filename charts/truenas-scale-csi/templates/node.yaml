@@ -116,6 +116,8 @@ spec:
                   fieldPath: spec.nodeName
             - name: DRIVER_NAME
               value: {{ include "truenas-scale-csi.csiDriverName" . | quote }}
+            - name: NFS_NOLOCK
+              value: {{ .Values.node.nfsNoLock | quote }}
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
