@@ -17,9 +17,9 @@ jobs:
         with:
           go-version: '1.22.3'
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: latest
+          version: v2.2.1
           args: --timeout=10m
       - uses: hadolint/hadolint-action@v3.1.0
         with:
