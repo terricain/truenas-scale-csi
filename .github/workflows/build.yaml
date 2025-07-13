@@ -52,7 +52,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/truenas-scale-csi
           labels: |
-            org.opencontainers.image.authors=Terry Cain
+            org.opencontainers.image.authors=Terri Cain
             org.opencontainers.image.title=TrueNAS Scale CSI Driver
             org.opencontainers.image.description=Supports dynamically provisioning PVs on TrueNAS Scale
           tags: |
