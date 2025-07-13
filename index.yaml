@@ -2,6 +2,27 @@ apiVersion: v1
 entries:
   truenas-scale-csi:
   - apiVersion: v2
+    appVersion: 1.3.0
+    created: "2025-07-13T11:23:18.553633379Z"
+    description: A TrueNAS Scale CSI provider
+    digest: 829febaf97b37c1f7f4efb34db30205b760b6395030878d714c8068b31b80bb1
+    home: https://github.com/terricain/truenas-scale-csi
+    keywords:
+    - csi
+    - nfs
+    - iscsi
+    - truenas
+    kubeVersion: '>=1.27.0-0'
+    maintainers:
+    - name: terricain
+    name: truenas-scale-csi
+    sources:
+    - https://github.com/terricain/truenas-scale-csi
+    type: application
+    urls:
+    - https://github.com/terricain/truenas-scale-csi/releases/download/truenas-scale-csi-1.3.0/truenas-scale-csi-1.3.0.tgz
+    version: 1.3.0
+  - apiVersion: v2
     appVersion: 1.2.0
     created: "2024-12-21T12:23:26.103890236Z"
     description: A TrueNAS Scale CSI provider
@@ -211,4 +232,4 @@ entries:
     urls:
     - https://github.com/terrycain/truenas-scale-csi/releases/download/truenas-scale-csi-0.1.1/truenas-scale-csi-0.1.1.tgz
     version: 0.1.1
-generated: "2024-12-21T12:23:26.103927315Z"
+generated: "2025-07-13T11:23:18.553679286Z"
